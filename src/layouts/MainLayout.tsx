@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { LayoutDashboard, Calculator, Settings, LogOut, Scale } from 'lucide-react';
+import { LayoutDashboard, Calculator, Settings, LogOut, Wallet } from 'lucide-react';
 import { clsx } from 'clsx';
 import { useTranslation } from 'react-i18next';
 import LanguageSwitcher from '../components/LanguageSwitcher';
@@ -36,8 +36,8 @@ const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
       {/* Sidebar */}
       <aside className="w-64 bg-gray-800 border-r border-gray-700 flex flex-col">
         <div className="p-6 border-b border-gray-700 flex items-center gap-3">
-          <Scale className="text-green-500" size={28} />
-          <h1 className="text-xl font-bold text-white tracking-widest uppercase font-mono">Balance Journal</h1>
+          <Wallet className="text-green-500 shrink-0" size={28} />
+          <h1 className="text-lg font-bold text-white tracking-widest uppercase font-mono whitespace-nowrap">Balance Journal</h1>
         </div>
         
         <nav className="flex-1 p-4 space-y-2">
