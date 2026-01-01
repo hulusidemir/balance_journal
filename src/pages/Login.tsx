@@ -56,6 +56,7 @@ const Login: React.FC = () => {
           <div className="bg-green-500 p-3 rounded-full mb-4">
             <Wallet size={32} className="text-white" />
           </div>
+          <h1 className="text-xl font-bold text-green-400 mb-6 text-center">Balance Journal by Hulusi DEMİR</h1>
           <h2 className="text-3xl font-bold text-white">
             {mode === 'login' ? t('auth.login') : t('auth.signup')}
           </h2>
