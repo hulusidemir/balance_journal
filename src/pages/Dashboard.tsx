@@ -6,6 +6,7 @@ import { api } from '../services/api';
 import { useNavigate } from 'react-router-dom';
 import { ChevronLeft, ChevronRight, TrendingUp, X, Wallet, Calendar, Target, ArrowUpRight } from 'lucide-react';
 import { clsx } from 'clsx';
+import { useTranslation } from 'react-i18next';
 import {
   AreaChart,
   Area,
@@ -18,10 +19,13 @@ import {
 import DatePicker, { registerLocale } from 'react-datepicker';
 import "react-datepicker/dist/react-datepicker.css";
 import { tr } from 'date-fns/locale/tr';
+import { enUS } from 'date-fns/locale/en-US';
 
 registerLocale('tr', tr);
+registerLocale('en', enUS);
 
 const Dashboard: React.FC = () => {
+  const { t, i18n } = useTranslation();
   const navigate = useNavigate();
   const [plan, setPlan] = useState<PlanDay[]>([]);
   const [activePlan, setActivePlan] = useState<Plan | null>(null);
@@ -93,7 +97,7 @@ const Dashboard: React.FC = () => {
       console.error('Error updating progress:', error);
       // Revert optimistic update on error
       loadPlanData(activePlan);
-      alert('Kayıt güncellenirken bir hata oluştu.');
+      alert(t('common.error'));
     }
   };
 
@@ -127,11 +131,11 @@ const Dashboard: React.FC = () => {
 
   // --- Chart Data Preparation ---
   const chartData = plan.map(p => ({
-    name: `Gün ${p.day}`,
+    name: `${t('dashboard.day')} ${p.day}`,
     day: p.day,
     date: p.date,
-    Beklenen: p.expectedEndBalance,
-    Gerçekleşen: p.actualBalance,
+    [t('dashboard.chart.expected')]: p.expectedEndBalance,
+    [t('dashboard.chart.actual')]: p.actualBalance,
   }));
 
   const filteredChartData = chartRange === 'all' 
@@ -154,10 +158,10 @@ const Dashboard: React.FC = () => {
             <div className="absolute top-0 right-0 p-4 opacity-10">
               <Wallet size={64} className="text-blue-500" />
             </div>
-            <h3 className="text-gray-400 text-sm font-medium mb-1">Mevcut Bakiye</h3>
+            <h3 className="text-gray-400 text-sm font-medium mb-1">{t('dashboard.currentBalance')}</h3>
             <div className="text-3xl font-bold text-white">{formatCurrency(currentBalance)}</div>
             <div className="mt-2 text-sm text-gray-400">
-              Başlangıç: <span className="text-gray-300">{formatCurrency(startBalance)}</span>
+              {t('dashboard.startBalance')}: <span className="text-gray-300">{formatCurrency(startBalance)}</span>
             </div>
           </div>
 
@@ -167,11 +171,11 @@ const Dashboard: React.FC = () => {
               <TrendingUp size={64} className="text-green-500" />
             </div>
             <div className="flex justify-between items-start">
-              <h3 className="text-gray-400 text-sm font-medium mb-1">Toplam Kâr</h3>
+              <h3 className="text-gray-400 text-sm font-medium mb-1">{t('dashboard.totalProfit')}</h3>
               <button 
                 onClick={() => setShowChart(true)}
                 className="text-gray-400 hover:text-white bg-gray-700/50 hover:bg-gray-700 p-1.5 rounded-lg transition-colors z-10"
-                title="Grafiği Göster"
+                title={t('dashboard.chart.all')}
               >
                 <TrendingUp size={18} />
               </button>
@@ -180,7 +184,7 @@ const Dashboard: React.FC = () => {
               {formatCurrency(totalProfit)}
             </div>
             <div className={clsx("mt-2 text-sm font-medium", totalProfitPercent >= 0 ? "text-green-500" : "text-red-500")}>
-              {totalProfitPercent > 0 ? '+' : ''}{totalProfitPercent.toFixed(2)}% Büyüme
+              {totalProfitPercent > 0 ? '+' : ''}{totalProfitPercent.toFixed(2)}%
             </div>
           </div>
 
@@ -189,9 +193,9 @@ const Dashboard: React.FC = () => {
             <div className="absolute top-0 right-0 p-4 opacity-10">
               <Calendar size={64} className="text-purple-500" />
             </div>
-            <h3 className="text-gray-400 text-sm font-medium mb-1">İlerleme Durumu</h3>
+            <h3 className="text-gray-400 text-sm font-medium mb-1">{t('dashboard.progress')}</h3>
             <div className="text-3xl font-bold text-white">
-              {currentDayNumber} <span className="text-lg text-gray-500">/ {settings?.days} Gün</span>
+              {currentDayNumber} <span className="text-lg text-gray-500">/ {settings?.days} {t('dashboard.day')}</span>
             </div>
             <div className="w-full bg-gray-700 h-2 rounded-full mt-3 overflow-hidden">
               <div 
@@ -206,13 +210,13 @@ const Dashboard: React.FC = () => {
             <div className="absolute top-0 right-0 p-4 opacity-10">
               <Target size={64} className="text-orange-500" />
             </div>
-            <h3 className="text-gray-400 text-sm font-medium mb-1">Sıradaki Hedef</h3>
+            <h3 className="text-gray-400 text-sm font-medium mb-1">{t('dashboard.table.expectedBalance')}</h3>
             <div className="text-3xl font-bold text-white">
               {formatCurrency(plan[currentDayNumber]?.expectedEndBalance)}
             </div>
             <div className="mt-2 text-sm text-orange-400 flex items-center gap-1">
               <ArrowUpRight size={16} />
-              Günlük Hedef: %{settings?.dailyProfitTargetPercent}
+              {t('dashboard.dailyTarget')}: %{settings?.dailyProfitTargetPercent}
             </div>
           </div>
         </div>
@@ -221,14 +225,14 @@ const Dashboard: React.FC = () => {
         <div className="bg-gray-800 rounded-xl border border-gray-700 shadow-lg overflow-hidden">
           <div className="p-6 border-b border-gray-700 flex justify-between items-center">
             <h2 className="text-xl font-bold text-white">
-              {activePlan?.name || 'Günlük Kayıtlar'}
+              {activePlan?.name || t('dashboard.title')}
             </h2>
             <div className="flex gap-2">
               <button 
                 onClick={() => setShowProjection(true)}
                 className="px-4 py-2 bg-blue-600/20 text-blue-400 hover:bg-blue-600/30 rounded-lg transition-colors text-sm font-medium"
               >
-                Projeksiyon Hesapla
+                {t('dashboard.projectionCalc')}
               </button>
             </div>
           </div>
@@ -237,16 +241,16 @@ const Dashboard: React.FC = () => {
             <table className="w-full text-left border-collapse">
               <thead className="bg-gray-900 text-gray-400 sticky top-0 z-10">
                 <tr>
-                  <th className="p-4 border-b border-gray-700">No</th>
-                  <th className="p-4 border-b border-gray-700">Tarih</th>
-                  <th className="p-4 border-b border-gray-700 bg-blue-900/20 text-blue-300">Bakiye (Giriş)</th>
-                  <th className="p-4 border-b border-gray-700">Beklenen Bakiye</th>
-                  <th className="p-4 border-b border-gray-700">Bek. Kar</th>
-                  <th className="p-4 border-b border-gray-700">Gerçekleşen Kar</th>
-                  <th className="p-4 border-b border-gray-700">% Kar</th>
-                  <th className="p-4 border-b border-gray-700">+/- Bakiye</th>
-                  <th className="p-4 border-b border-gray-700">% Uzaklık</th>
-                  <th className="p-4 border-b border-gray-700">Durum</th>
+                  <th className="p-4 border-b border-gray-700">{t('dashboard.table.no')}</th>
+                  <th className="p-4 border-b border-gray-700">{t('dashboard.table.date')}</th>
+                  <th className="p-4 border-b border-gray-700 bg-blue-900/20 text-blue-300">{t('dashboard.table.balanceInput')}</th>
+                  <th className="p-4 border-b border-gray-700">{t('dashboard.table.expectedBalance')}</th>
+                  <th className="p-4 border-b border-gray-700">{t('dashboard.table.expectedProfit')}</th>
+                  <th className="p-4 border-b border-gray-700">{t('dashboard.table.actualProfit')}</th>
+                  <th className="p-4 border-b border-gray-700">{t('dashboard.table.profitPercent')}</th>
+                  <th className="p-4 border-b border-gray-700">{t('dashboard.table.balanceDiff')}</th>
+                  <th className="p-4 border-b border-gray-700">{t('dashboard.table.distancePercent')}</th>
+                  <th className="p-4 border-b border-gray-700">{t('dashboard.table.status')}</th>
                 </tr>
               </thead>
               <tbody className="text-gray-300">
@@ -313,7 +317,7 @@ const Dashboard: React.FC = () => {
                             "px-2 py-1 rounded text-xs font-bold",
                             isTargetMet ? "bg-green-900 text-green-300" : "bg-red-900 text-red-300"
                           )}>
-                            {isTargetMet ? "HEDEF TUTTU" : "HEDEF ALTI"}
+                            {isTargetMet ? t('dashboard.table.targetMet') : t('dashboard.table.targetMissed')}
                           </span>
                         )}
                       </td>
@@ -334,7 +338,7 @@ const Dashboard: React.FC = () => {
               <ChevronLeft size={20} />
             </button>
             <span className="text-gray-400">
-              Sayfa {currentPage} / {totalPages}
+              {t('common.page')} {currentPage} / {totalPages}
             </span>
             <button
               onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
@@ -354,7 +358,7 @@ const Dashboard: React.FC = () => {
                 <div className="flex items-center gap-4">
                   <h2 className="text-xl font-bold text-white flex items-center gap-2">
                     <TrendingUp className="text-blue-500" />
-                    Büyüme Eğrisi
+                    {t('dashboard.chart.expected')} / {t('dashboard.chart.actual')}
                   </h2>
                   <div className="flex bg-gray-700 rounded-lg p-1 gap-1">
                     {[30, 60, 90].map(days => (
@@ -368,7 +372,7 @@ const Dashboard: React.FC = () => {
                             : "text-gray-400 hover:text-white hover:bg-gray-600"
                         )}
                       >
-                        {days} Gün
+                        {days} {t('dashboard.chart.days')}
                       </button>
                     ))}
                     <button
@@ -380,7 +384,7 @@ const Dashboard: React.FC = () => {
                           : "text-gray-400 hover:text-white hover:bg-gray-600"
                       )}
                     >
-                      Tümü
+                      {t('dashboard.chart.all')}
                     </button>
                   </div>
                 </div>
@@ -426,22 +430,22 @@ const Dashboard: React.FC = () => {
                     />
                     <Area 
                       type="monotone" 
-                      dataKey="Beklenen" 
+                      dataKey={t('dashboard.chart.expected')} 
                       stroke="#3b82f6" 
                       fillOpacity={1} 
                       fill="url(#colorExpected)" 
                       strokeWidth={2}
-                      name="Beklenen Bakiye"
+                      name={t('dashboard.chart.expected')}
                     />
                     <Area 
                       type="monotone" 
-                      dataKey="Gerçekleşen" 
+                      dataKey={t('dashboard.chart.actual')} 
                       stroke="#10b981" 
                       fillOpacity={1} 
                       fill="url(#colorActual)" 
                       strokeWidth={2}
                       connectNulls
-                      name="Gerçekleşen Bakiye"
+                      name={t('dashboard.chart.actual')}
                     />
                   </AreaChart>
                 </ResponsiveContainer>
@@ -455,7 +459,7 @@ const Dashboard: React.FC = () => {
           <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 backdrop-blur-sm p-4">
             <div className="bg-gray-800 rounded-xl border border-gray-700 shadow-2xl max-w-md w-full p-6">
               <div className="flex justify-between items-center mb-4">
-                <h3 className="text-xl font-bold text-white">Hedef Projeksiyonu</h3>
+                <h3 className="text-xl font-bold text-white">{t('dashboard.projection.title')}</h3>
                 <button onClick={() => setShowProjection(false)} className="text-gray-400 hover:text-white">
                   <X size={24} />
                 </button>
@@ -469,7 +473,7 @@ const Dashboard: React.FC = () => {
                     projectionMode === 'balance' ? "bg-blue-600 text-white shadow" : "text-gray-400 hover:text-white"
                   )}
                 >
-                  Hedef: Bakiye
+                  {t('dashboard.projection.modeBalance')}
                 </button>
                 <button
                   onClick={() => setProjectionMode('date')}
@@ -478,13 +482,13 @@ const Dashboard: React.FC = () => {
                     projectionMode === 'date' ? "bg-blue-600 text-white shadow" : "text-gray-400 hover:text-white"
                   )}
                 >
-                  Hedef: Tarih
+                  {t('dashboard.projection.modeDate')}
                 </button>
               </div>
               
               <div className="space-y-4">
                 <div>
-                  <label className="block text-sm text-gray-400 mb-1">Mevcut Bakiye</label>
+                  <label className="block text-sm text-gray-400 mb-1">{t('dashboard.currentBalance')}</label>
                   <input 
                     type="number" 
                     value={projectionCurrentBalance}
@@ -495,27 +499,27 @@ const Dashboard: React.FC = () => {
                 
                 {projectionMode === 'balance' ? (
                   <div>
-                    <label className="block text-sm text-gray-400 mb-1">Hedeflenen Bakiye ($)</label>
+                    <label className="block text-sm text-gray-400 mb-1">{t('dashboard.projection.targetBalance')}</label>
                     <input 
                       type="number" 
                       id="target-balance-input"
                       className="w-full bg-gray-700 border border-gray-600 rounded px-3 py-2 text-white focus:outline-none focus:border-blue-500"
-                      placeholder="Örn: 10000"
+                      placeholder="10000"
                     />
                   </div>
                 ) : (
                   <div>
-                    <label className="block text-sm text-gray-400 mb-1">Hedef Tarih</label>
+                    <label className="block text-sm text-gray-400 mb-1">{t('dashboard.projection.targetDate')}</label>
                     <div className="w-full">
                       <DatePicker
                         selected={targetDate}
                         onChange={(date: Date | null) => setTargetDate(date)}
                         dateFormat="d MMMM yyyy"
-                        locale="tr"
+                        locale={i18n.language === 'tr' ? 'tr' : 'en'}
                         minDate={new Date()}
                         className="w-full bg-gray-700 border border-gray-600 rounded px-3 py-2 text-white focus:outline-none focus:border-blue-500"
                         wrapperClassName="w-full"
-                        placeholderText="Tarih seçin"
+                        placeholderText={t('common.date')}
                       />
                     </div>
                   </div>
@@ -545,7 +549,7 @@ const Dashboard: React.FC = () => {
                     if (projectionMode === 'balance') {
                       const target = Number((document.getElementById('target-balance-input') as HTMLInputElement).value);
                       if (!target || target <= projectionCurrentBalance) {
-                        alert('Lütfen mevcut bakiyeden yüksek bir hedef girin.');
+                        alert(t('dashboard.projection.errorTarget'));
                         return;
                       }
                       
@@ -555,10 +559,10 @@ const Dashboard: React.FC = () => {
                       const tDate = new Date(baseDate);
                       tDate.setDate(tDate.getDate() + daysNeeded);
                       
-                      alert(`Bu hedefe ulaşmak için yaklaşık ${daysNeeded} gün gerekiyor.\nTahmini Tarih: ${tDate.toLocaleDateString('tr-TR')}`);
+                      alert(t('dashboard.projection.resultDays', { days: daysNeeded }) + '\n' + t('dashboard.projection.resultDate', { date: tDate.toLocaleDateString(i18n.language === 'tr' ? 'tr-TR' : 'en-US') }));
                     } else {
                       if (!targetDate) {
-                        alert('Lütfen bir tarih seçin.');
+                        alert(t('dashboard.projection.errorDate'));
                         return;
                       }
 
@@ -569,19 +573,23 @@ const Dashboard: React.FC = () => {
                       const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
 
                       if (diffDays <= 0) {
-                        alert('Lütfen başlangıç tarihinden ileri bir tarih seçin.');
+                        alert(t('dashboard.projection.errorFutureDate'));
                         return;
                       }
 
                       // Future = Current * (1 + rate)^days
                       const futureBalance = projectionCurrentBalance * Math.pow(1 + dailyRate, diffDays);
                       
-                      alert(`${tDate.toLocaleDateString('tr-TR')} tarihinde (${diffDays} gün sonra)\ntahmini bakiyeniz: ${formatCurrency(futureBalance)}`);
+                      alert(t('dashboard.projection.resultFutureBalance', { 
+                        date: tDate.toLocaleDateString(i18n.language === 'tr' ? 'tr-TR' : 'en-US'), 
+                        days: diffDays, 
+                        balance: formatCurrency(futureBalance) 
+                      }));
                     }
                   }}
                   className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 rounded-lg transition-colors"
                 >
-                  Hesapla
+                  {t('dashboard.projection.calculate')}
                 </button>
               </div>
             </div>

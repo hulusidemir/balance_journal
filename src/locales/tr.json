@@ -1,0 +1,132 @@
+{
+  "common": {
+    "loading": "Yükleniyor...",
+    "save": "Kaydet",
+    "cancel": "İptal",
+    "delete": "Sil",
+    "edit": "Düzenle",
+    "calculate": "Hesapla",
+    "error": "Hata",
+    "success": "Başarılı",
+    "confirmDelete": "Bu öğeyi silmek istediğinize emin misiniz?",
+    "date": "Tarih",
+    "page": "Sayfa"
+  },
+  "auth": {
+    "login": "Giriş Yap",
+    "signup": "Kayıt Ol",
+    "email": "E-posta Adresi",
+    "password": "Şifre",
+    "loginSubtitle": "Trade Wallet hesabınıza erişin",
+    "noAccount": "Hesabınız yok mu? Kayıt olun",
+    "hasAccount": "Zaten hesabınız var mı? Giriş yapın",
+    "processing": "İşleniyor...",
+    "signupSuccess": "Kayıt başarılı! Lütfen e-posta adresinizi doğrulayın."
+  },
+  "dashboard": {
+    "title": "Panel",
+    "currentBalance": "Mevcut Bakiye",
+    "startBalance": "Başlangıç",
+    "totalProfit": "Toplam Kar",
+    "dailyTarget": "Günlük Hedef",
+    "progress": "İlerleme",
+    "day": "Gün",
+    "projectionCalc": "Projeksiyon Hesapla",
+    "table": {
+      "no": "No",
+      "date": "Tarih",
+      "balanceInput": "Bakiye (Giriş)",
+      "expectedBalance": "Beklenen Bakiye",
+      "expectedProfit": "Bek. Kar",
+      "actualProfit": "Gerçekleşen Kar",
+      "profitPercent": "% Kar",
+      "balanceDiff": "+/- Bakiye",
+      "distancePercent": "% Uzaklık",
+      "status": "Durum",
+      "targetMet": "HEDEF TUTTU",
+      "targetMissed": "HEDEF ALTI"
+    },
+    "chart": {
+      "expected": "Beklenen Bakiye",
+      "actual": "Gerçekleşen Bakiye",
+      "days": "Gün",
+      "all": "Tümü"
+    },
+    "projection": {
+      "title": "Hedef Projeksiyonu",
+      "modeBalance": "Hedef: Bakiye",
+      "modeDate": "Hedef: Tarih",
+      "targetBalance": "Hedeflenen Bakiye ($)",
+      "targetDate": "Hedef Tarih",
+      "calculate": "Hesapla",
+      "resultDays": "Bu hedefe ulaşmak için yaklaşık {{days}} gün gerekiyor.",
+      "resultDate": "Tahmini Tarih: {{date}}",
+      "resultFutureBalance": "{{date}} tarihinde ({{days}} gün sonra)\ntahmini bakiyeniz: {{balance}}",
+      "errorTarget": "Lütfen mevcut bakiyeden yüksek bir hedef girin.",
+      "errorDate": "Lütfen bir tarih seçin.",
+      "errorFutureDate": "Lütfen başlangıç tarihinden ileri bir tarih seçin."
+    }
+  },
+  "calculator": {
+    "title": "İşlem Hesaplayıcı",
+    "subtitle": "Günlük hedefinize göre işlem başına kar hedefini hesaplayın.",
+    "dailyPlan": "Günlük Plan",
+    "balance": "Bakiye ($)",
+    "dailyTargetPercent": "Günlük Hedef (%)",
+    "tradeCount": "İşlem Sayısı",
+    "dailyTargetAmount": "Günlük Hedef ($)",
+    "targetPerTrade": "İşlem Başına Hedef ($)",
+    "targetPerTradePercent": "İşlem Başına Hedef (%)",
+    "tradeDetails": "İşlem Detayları",
+    "leverage": "Kaldıraç (x)",
+    "entryPrice": "Coine Giriş Fiyatı ($)",
+    "direction": "İşlem Yönü",
+    "long": "Long",
+    "short": "Short",
+    "targetProfitRate": "Hedef Kar Oranı (% Bakiye)",
+    "autoCalculated": "Otomatik Hesaplandı",
+    "result": "Hesaplama Sonucu",
+    "positionSize": "İşlem Değeri (Position Size)",
+    "pieces": "adet",
+    "targetProfit": "Kar Hedefi ($)",
+    "balancePercent": "Bakiyenin %{{percent}}'si",
+    "requiredMove": "Gerekli Fiyat Hareketi",
+    "exitPrice": "Coinden Çıkış Fiyatı"
+  },
+  "settings": {
+    "title": "Ayarlar",
+    "plans": "Planlarım",
+    "createNew": "Yeni Plan Oluştur",
+    "active": "Aktif",
+    "activate": "Aktifleştir",
+    "preview": "Önizleme",
+    "planName": "Plan Adı",
+    "startBalance": "Başlangıç Bakiyesi ($)",
+    "startDate": "Başlangıç Tarihi",
+    "dailyTarget": "Günlük Hedef (%)",
+    "days": "Gün Sayısı",
+    "create": "Plan Oluştur",
+    "previewTitle": "Plan Önizlemesi",
+    "table": {
+      "day": "Gün",
+      "date": "Tarih",
+      "start": "Başlangıç",
+      "target": "Hedef Kar",
+      "end": "Bitiş"
+    },
+    "alerts": {
+      "enterName": "Lütfen bir plan adı girin.",
+      "created": "Yeni plan oluşturuldu ve aktif edildi.",
+      "errorCreate": "Plan oluşturulurken bir hata oluştu.",
+      "confirmDelete": "Bu planı silmek istediğinize emin misiniz? Bu işlem geri alınamaz.",
+      "errorDelete": "Plan silinirken bir hata oluştu.",
+      "errorLoad": "Planlar yüklenirken bir hata oluştu."
+    }
+  },
+  "nav": {
+    "dashboard": "Panel",
+    "calculator": "Hesaplayıcı",
+    "settings": "Ayarlar",
+    "logout": "Çıkış"
+  }
+}

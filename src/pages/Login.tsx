@@ -3,8 +3,10 @@ import { useNavigate } from 'react-router-dom';
 import { Wallet } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../contexts/AuthContext';
+import { useTranslation } from 'react-i18next';
 
 const Login: React.FC = () => {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const { user } = useAuth();
   const [email, setEmail] = useState('');
@@ -31,7 +33,7 @@ const Login: React.FC = () => {
           password,
         });
         if (error) throw error;
-        alert('Kayıt başarılı! Lütfen e-posta adresinizi doğrulayın.');
+        alert(t('auth.signupSuccess'));
       } else {
         const { error } = await supabase.auth.signInWithPassword({
           email,
@@ -55,9 +57,9 @@ const Login: React.FC = () => {
             <Wallet size={32} className="text-white" />
           </div>
           <h2 className="text-3xl font-bold text-white">
-            {mode === 'login' ? 'Giriş Yap' : 'Kayıt Ol'}
+            {mode === 'login' ? t('auth.login') : t('auth.signup')}
           </h2>
-          <p className="text-gray-400 mt-2">Trade Wallet hesabınıza erişin</p>
+          <p className="text-gray-400 mt-2">{t('auth.loginSubtitle')}</p>
         </div>
 
         {error && (
@@ -69,7 +71,7 @@ const Login: React.FC = () => {
         <form onSubmit={handleAuth} className="space-y-6">
           <div>
             <label className="block text-sm font-medium text-gray-300 mb-2">
-              E-posta Adresi
+              {t('auth.email')}
             </label>
             <input
               type="email"
@@ -83,7 +85,7 @@ const Login: React.FC = () => {
 
           <div>
             <label className="block text-sm font-medium text-gray-300 mb-2">
-              Şifre
+              {t('auth.password')}
             </label>
             <input
               type="password"
@@ -101,7 +103,7 @@ const Login: React.FC = () => {
             disabled={loading}
             className="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-3 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            {loading ? 'İşleniyor...' : (mode === 'login' ? 'Giriş Yap' : 'Kayıt Ol')}
+            {loading ? t('auth.processing') : (mode === 'login' ? t('auth.login') : t('auth.signup'))}
           </button>
 
           <div className="text-center mt-4">
@@ -111,8 +113,8 @@ const Login: React.FC = () => {
               className="text-sm text-gray-400 hover:text-white transition-colors"
             >
               {mode === 'login' 
-                ? 'Hesabınız yok mu? Kayıt olun' 
-                : 'Zaten hesabınız var mı? Giriş yapın'}
+                ? t('auth.noAccount') 
+                : t('auth.hasAccount')}
             </button>
           </div>
         </form>

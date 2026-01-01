@@ -2,6 +2,8 @@ import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { LayoutDashboard, Calculator, Settings, LogOut } from 'lucide-react';
 import { clsx } from 'clsx';
+import { useTranslation } from 'react-i18next';
+import LanguageSwitcher from '../components/LanguageSwitcher';
 
 interface MainLayoutProps {
   children: React.ReactNode;
@@ -9,11 +11,12 @@ interface MainLayoutProps {
 
 const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
   const location = useLocation();
+  const { t } = useTranslation();
 
   const navItems = [
-    { path: '/dashboard', label: 'Bakiye Takip', icon: LayoutDashboard },
-    { path: '/calculator', label: 'İşlem Hesapla', icon: Calculator },
-    { path: '/settings', label: 'Ayarlar', icon: Settings },
+    { path: '/dashboard', label: t('nav.dashboard'), icon: LayoutDashboard },
+    { path: '/calculator', label: t('nav.calculator'), icon: Calculator },
+    { path: '/settings', label: t('nav.settings'), icon: Settings },
   ];
 
   return (
@@ -46,13 +49,16 @@ const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
           })}
         </nav>
 
-        <div className="p-4 border-t border-gray-700">
+        <div className="p-4 border-t border-gray-700 space-y-4">
+          <div className="flex justify-center">
+            <LanguageSwitcher />
+          </div>
           <Link
             to="/"
             className="flex items-center gap-3 px-4 py-3 text-red-400 hover:bg-gray-700 hover:text-red-300 rounded-lg transition-colors"
           >
             <LogOut size={20} />
-            <span>Çıkış Yap</span>
+            <span>{t('nav.logout')}</span>
           </Link>
         </div>
       </aside>

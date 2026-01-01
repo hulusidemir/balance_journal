@@ -8,10 +8,14 @@ import { generatePlan, type PlanDay } from '../utils/planGenerator';
 import DatePicker, { registerLocale } from 'react-datepicker';
 import "react-datepicker/dist/react-datepicker.css";
 import { tr } from 'date-fns/locale/tr';
+import { enUS } from 'date-fns/locale/en-US';
+import { useTranslation } from 'react-i18next';
 
 registerLocale('tr', tr);
+registerLocale('en', enUS);
 
 const Settings: React.FC = () => {
+  const { t, i18n } = useTranslation();
   const navigate = useNavigate();
   const [plans, setPlans] = useState<Plan[]>([]);
   const [activePlanId, setActivePlanIdState] = useState<string | null>(null);
@@ -54,13 +58,13 @@ const Settings: React.FC = () => {
       }
     } catch (error) {
       console.error('Error loading plans:', error);
-      alert('Planlar yüklenirken bir hata oluştu.');
+      alert(t('settings.alerts.errorLoad'));
     }
   };
 
   const handlePreview = () => {
     if (!planName) {
-      alert('Lütfen bir plan adı girin.');
+      alert(t('settings.alerts.enterName'));
       return;
     }
 
@@ -92,15 +96,15 @@ const Settings: React.FC = () => {
       setPlanName('');
       setShowPreview(false);
       await loadPlans();
-      alert('Yeni plan oluşturuldu ve aktif edildi.');
+      alert(t('settings.alerts.created'));
     } catch (error) {
       console.error('Error creating plan:', error);
-      alert('Plan oluşturulurken bir hata oluştu.');
+      alert(t('settings.alerts.errorCreate'));
     }
   };
 
   const handleDeletePlan = async (id: string) => {
-    if (window.confirm('Bu planı silmek istediğinize emin misiniz? Bu işlem geri alınamaz.')) {
+    if (window.confirm(t('settings.alerts.confirmDelete'))) {
       try {
         await api.deletePlan(id);
         // If deleted plan was active, clear active plan
@@ -110,7 +114,7 @@ const Settings: React.FC = () => {
         await loadPlans();
       } catch (error) {
         console.error('Error deleting plan:', error);
-        alert('Plan silinirken bir hata oluştu.');
+        alert(t('settings.alerts.errorDelete'));
       }
     }
   };
@@ -133,7 +137,7 @@ const Settings: React.FC = () => {
             <div className="p-6 border-b border-gray-700 flex justify-between items-center">
               <h2 className="text-xl font-bold text-white flex items-center gap-2">
                 <Eye className="text-blue-500" />
-                Plan Önizlemesi: {planName}
+                {t('settings.previewTitle')}: {planName}
               </h2>
               <button 
                 onClick={() => setShowPreview(false)}
@@ -146,16 +150,16 @@ const Settings: React.FC = () => {
             <div className="p-6 overflow-auto flex-1">
               <div className="grid grid-cols-2 gap-4 mb-6">
                 <div className="bg-gray-700/30 p-3 rounded-lg">
-                  <span className="text-gray-400 text-sm block">Başlangıç</span>
+                  <span className="text-gray-400 text-sm block">{t('settings.table.start')}</span>
                   <span className="text-white font-bold">{formatCurrency(startBalance)}</span>
                 </div>
                 <div className="bg-gray-700/30 p-3 rounded-lg">
-                  <span className="text-gray-400 text-sm block">Günlük Hedef</span>
+                  <span className="text-gray-400 text-sm block">{t('settings.dailyTarget')}</span>
                   <span className="text-green-400 font-bold">%{dailyProfitTargetPercent}</span>
                 </div>
               </div>
 
-              <h3 className="text-lg font-semibold text-white mb-3">Önemli Kilometre Taşları</h3>
+              <h3 className="text-lg font-semibold text-white mb-3">Important Milestones</h3>
               <div className="space-y-2">
                 {[15, 30, 60, 90, 180, 365].filter(d => d <= days).map(day => {
                   const dayData = previewPlan.find(p => p.day === day);
@@ -163,7 +167,7 @@ const Settings: React.FC = () => {
                   return (
                     <div key={day} className="flex justify-between items-center p-3 bg-gray-700/50 rounded-lg border border-gray-700">
                       <div>
-                        <span className="text-gray-300 font-medium">{day}. Gün</span>
+                        <span className="text-gray-300 font-medium">{day}. {t('settings.table.day')}</span>
                         <span className="text-xs text-gray-500 ml-2">({dayData.date})</span>
                       </div>
                       <span className="text-green-400 font-bold">
@@ -180,14 +184,14 @@ const Settings: React.FC = () => {
                 onClick={() => setShowPreview(false)}
                 className="flex-1 px-4 py-3 bg-gray-700 hover:bg-gray-600 text-white rounded-lg transition-colors"
               >
-                Düzenlemeye Dön
+                {t('common.edit')}
               </button>
               <button
                 onClick={handleCreatePlan}
                 className="flex-1 px-4 py-3 bg-green-600 hover:bg-green-700 text-white font-bold rounded-lg transition-colors flex items-center justify-center gap-2"
               >
                 <Save size={20} />
-                Onayla ve Kaydet
+                {t('common.save')}
               </button>
             </div>
           </div>
@@ -198,10 +202,10 @@ const Settings: React.FC = () => {
         <div className="mb-8">
           <h1 className="text-3xl font-bold text-white flex items-center gap-3">
             <SettingsIcon className="text-green-500" />
-            Ayarlar ve Planlar
+            {t('settings.title')}
           </h1>
           <p className="text-gray-400 mt-2">
-            Yeni bir plan oluşturun veya mevcut planlarınızı yönetin.
+            Create a new plan or manage existing ones.
           </p>
         </div>
 
@@ -210,19 +214,19 @@ const Settings: React.FC = () => {
           <div className="bg-gray-800 p-6 rounded-xl border border-gray-700 shadow-lg h-fit">
             <h2 className="text-xl font-semibold text-white mb-6 border-b border-gray-700 pb-2 flex items-center gap-2">
               <Plus className="text-green-500" />
-              Yeni Plan Oluştur
+              {t('settings.createNew')}
             </h2>
             
             <div className="space-y-4">
               <div>
                 <label className="block text-sm font-medium text-gray-400 mb-1">
-                  Plan Adı
+                  {t('settings.planName')}
                 </label>
                 <input
                   type="text"
                   value={planName}
                   onChange={(e) => setPlanName(e.target.value)}
-                  placeholder="Örn: 2026 Hedefleri"
+                  placeholder="e.g. 2026 Goals"
                   className="w-full px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:border-green-500"
                 />
               </div>
@@ -230,7 +234,7 @@ const Settings: React.FC = () => {
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-400 mb-1">
-                    Başlangıç Bakiyesi ($)
+                    {t('settings.startBalance')}
                   </label>
                   <input
                     type="number"
@@ -241,7 +245,7 @@ const Settings: React.FC = () => {
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-400 mb-1">
-                    Başlangıç Tarihi
+                    {t('settings.startDate')}
                   </label>
                   <div className="w-full">
                     <DatePicker
@@ -252,7 +256,7 @@ const Settings: React.FC = () => {
                         }
                       }}
                       dateFormat="d MMMM yyyy"
-                      locale="tr"
+                      locale={i18n.language === 'tr' ? 'tr' : 'en'}
                       className="w-full px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:border-green-500"
                       wrapperClassName="w-full"
                     />
@@ -263,7 +267,7 @@ const Settings: React.FC = () => {
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-400 mb-1">
-                    Günlük Hedef (%)
+                    {t('settings.dailyTarget')}
                   </label>
                   <input
                     type="number"
@@ -274,7 +278,7 @@ const Settings: React.FC = () => {
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-400 mb-1">
-                    Süre (Gün)
+                    {t('settings.days')}
                   </label>
                   <input
                     type="number"
@@ -290,7 +294,7 @@ const Settings: React.FC = () => {
                 className="w-full flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 rounded-lg transition-colors mt-4"
               >
                 <Eye size={20} />
-                Planı Önizle
+                {t('settings.preview')}
               </button>
             </div>
           </div>
@@ -298,12 +302,12 @@ const Settings: React.FC = () => {
           {/* Existing Plans */}
           <div className="bg-gray-800 p-6 rounded-xl border border-gray-700 shadow-lg">
             <h2 className="text-xl font-semibold text-white mb-6 border-b border-gray-700 pb-2">
-              Kayıtlı Planlar
+              {t('settings.plans')}
             </h2>
 
             {plans.length === 0 ? (
               <div className="text-center py-8 text-gray-500">
-                Henüz kayıtlı bir planınız yok.
+                No plans found.
               </div>
             ) : (
               <div className="space-y-4">
@@ -320,12 +324,12 @@ const Settings: React.FC = () => {
                       <div>
                         <h3 className="font-bold text-white text-lg">{plan.name}</h3>
                         <p className="text-sm text-gray-400">
-                          {plan.settings.startDate} • {plan.settings.days} Gün • %{plan.settings.dailyProfitTargetPercent} Hedef
+                          {plan.settings.startDate} • {plan.settings.days} {t('settings.table.day')} • %{plan.settings.dailyProfitTargetPercent} {t('settings.table.target')}
                         </p>
                       </div>
                       {activePlanId === plan.id && (
                         <span className="bg-green-600 text-white text-xs px-2 py-1 rounded-full flex items-center gap-1">
-                          <CheckCircle size={12} /> Aktif
+                          <CheckCircle size={12} /> {t('settings.active')}
                         </span>
                       )}
                     </div>
@@ -336,7 +340,7 @@ const Settings: React.FC = () => {
                           onClick={() => handleActivatePlan(plan.id)}
                           className="flex-1 bg-blue-600 hover:bg-blue-700 text-white py-2 rounded text-sm font-medium transition-colors"
                         >
-                          Seç ve Git
+                          {t('settings.activate')}
                         </button>
                       )}
                       <button

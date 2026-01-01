@@ -4,8 +4,10 @@ import { calculateTrade, type TradeResult } from '../utils/tradeCalculator';
 import { getActivePlanId } from '../utils/storage';
 import { api } from '../services/api';
 import { Calculator as CalcIcon, ArrowRight, TrendingUp, TrendingDown } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 
 const Calculator: React.FC = () => {
+  const { t } = useTranslation();
   const [balance, setBalance] = useState<number>(1000);
   const [dailyProfitTargetPercent, setDailyProfitTargetPercent] = useState<number>(10);
   const [tradeCount, setTradeCount] = useState<number>(5);
@@ -64,22 +66,22 @@ const Calculator: React.FC = () => {
         <div className="mb-8">
           <h1 className="text-3xl font-bold text-white flex items-center gap-3">
             <CalcIcon className="text-green-500" />
-            İşlem Hesaplayıcı
+            {t('calculator.title')}
           </h1>
           <p className="text-gray-400 mt-2">
-            Günlük hedefinize göre işlem başına kar hedefini hesaplayın.
+            {t('calculator.subtitle')}
           </p>
         </div>
 
         {/* Daily Plan Section */}
         <div className="bg-gray-800 p-6 rounded-xl border border-gray-700 shadow-lg mb-8">
           <h2 className="text-xl font-semibold text-white mb-6 border-b border-gray-700 pb-2">
-            Günlük Plan
+            {t('calculator.dailyPlan')}
           </h2>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
              <div>
                 <label className="block text-sm font-medium text-gray-400 mb-2">
-                  Bakiye ($)
+                  {t('calculator.balance')}
                 </label>
                 <input
                   type="number"
@@ -90,7 +92,7 @@ const Calculator: React.FC = () => {
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-400 mb-2">
-                  Günlük Hedef (%)
+                  {t('calculator.dailyTargetPercent')}
                 </label>
                 <input
                   type="number"
@@ -101,7 +103,7 @@ const Calculator: React.FC = () => {
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-400 mb-2">
-                  İşlem Sayısı
+                  {t('calculator.tradeCount')}
                 </label>
                 <input
                   type="number"
@@ -114,19 +116,19 @@ const Calculator: React.FC = () => {
           
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-6 pt-6 border-t border-gray-700/50">
              <div className="bg-gray-700/30 p-4 rounded-lg">
-                <p className="text-gray-400 text-sm">Günlük Hedef ($)</p>
+                <p className="text-gray-400 text-sm">{t('calculator.dailyTargetAmount')}</p>
                 <p className="text-xl font-bold text-green-400">
                   ${dailyTargetAmount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                 </p>
              </div>
              <div className="bg-gray-700/30 p-4 rounded-lg">
-                <p className="text-gray-400 text-sm">İşlem Başına Hedef ($)</p>
+                <p className="text-gray-400 text-sm">{t('calculator.targetPerTrade')}</p>
                 <p className="text-xl font-bold text-blue-400">
                   ${targetProfitPerTradeAmount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                 </p>
              </div>
              <div className="bg-gray-700/30 p-4 rounded-lg">
-                <p className="text-gray-400 text-sm">İşlem Başına Hedef (%)</p>
+                <p className="text-gray-400 text-sm">{t('calculator.targetPerTradePercent')}</p>
                 <p className="text-xl font-bold text-purple-400">
                   %{targetProfitPercent.toFixed(2)}
                 </p>
@@ -138,7 +140,7 @@ const Calculator: React.FC = () => {
           {/* Input Section */}
           <div className="bg-gray-800 p-6 rounded-xl border border-gray-700 shadow-lg">
             <h2 className="text-xl font-semibold text-white mb-6 border-b border-gray-700 pb-2">
-              İşlem Detayları
+              {t('calculator.tradeDetails')}
             </h2>
             
             <div className="space-y-6">
@@ -146,7 +148,7 @@ const Calculator: React.FC = () => {
 
               <div>
                 <label className="block text-sm font-medium text-gray-400 mb-2">
-                  Kaldıraç (x)
+                  {t('calculator.leverage')}
                 </label>
                 <select
                   value={leverage}
@@ -163,7 +165,7 @@ const Calculator: React.FC = () => {
 
               <div>
                 <label className="block text-sm font-medium text-gray-400 mb-2">
-                  Coine Giriş Fiyatı ($)
+                  {t('calculator.entryPrice')}
                 </label>
                 <input
                   type="number"
@@ -175,7 +177,7 @@ const Calculator: React.FC = () => {
 
               <div>
                 <label className="block text-sm font-medium text-gray-400 mb-2">
-                  İşlem Yönü
+                  {t('calculator.direction')}
                 </label>
                 <div className="grid grid-cols-2 gap-4">
                   <button
@@ -187,7 +189,7 @@ const Calculator: React.FC = () => {
                     }`}
                   >
                     <TrendingUp size={20} />
-                    Long
+                    {t('calculator.long')}
                   </button>
                   <button
                     onClick={() => setDirection('short')}
@@ -198,17 +200,17 @@ const Calculator: React.FC = () => {
                     }`}
                   >
                     <TrendingDown size={20} />
-                    Short
+                    {t('calculator.short')}
                   </button>
                 </div>
               </div>
 
               <div>
                 <label className="block text-sm font-medium text-gray-400 mb-2">
-                  Hedef Kar Oranı (% Bakiye)
+                  {t('calculator.targetProfitRate')}
                 </label>
                 <div className="w-full px-4 py-3 bg-gray-700/50 border border-gray-600 rounded-lg text-gray-300">
-                  %{targetProfitPercent.toFixed(2)} (Otomatik Hesaplandı)
+                  %{targetProfitPercent.toFixed(2)} ({t('calculator.autoCalculated')})
                 </div>
               </div>
             </div>
@@ -217,42 +219,42 @@ const Calculator: React.FC = () => {
           {/* Result Section */}
           <div className="bg-gray-800 p-6 rounded-xl border border-gray-700 shadow-lg flex flex-col justify-center">
             <h2 className="text-xl font-semibold text-white mb-6 border-b border-gray-700 pb-2">
-              Hesaplama Sonucu
+              {t('calculator.result')}
             </h2>
 
             {result && (
               <div className="space-y-6">
                 <div className="bg-gray-700/50 p-4 rounded-lg">
-                  <p className="text-gray-400 text-sm mb-1">İşlem Değeri (Position Size)</p>
+                  <p className="text-gray-400 text-sm mb-1">{t('calculator.positionSize')}</p>
                   <div className="flex items-baseline gap-2">
                     <p className="text-2xl font-bold text-white">
                       ${result.positionSize.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                     </p>
                     <span className="text-sm text-gray-400">
-                      ({(result.positionSize / entryPrice).toLocaleString('en-US', { maximumFractionDigits: 4 })} adet)
+                      ({(result.positionSize / entryPrice).toLocaleString('en-US', { maximumFractionDigits: 4 })} {t('calculator.pieces')})
                     </span>
                   </div>
                 </div>
 
                 <div className="bg-gray-700/50 p-4 rounded-lg">
-                  <p className="text-gray-400 text-sm mb-1">Kar Hedefi ($)</p>
+                  <p className="text-gray-400 text-sm mb-1">{t('calculator.targetProfit')}</p>
                   <p className="text-2xl font-bold text-green-400">
                     ${result.targetProfitAmount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                   </p>
                   <p className="text-xs text-gray-500 mt-1">
-                    Bakiyenin %{targetProfitPercent}'si
+                    {t('calculator.balancePercent', { percent: targetProfitPercent })}
                   </p>
                 </div>
 
                 <div className="bg-gray-700/50 p-4 rounded-lg">
-                  <p className="text-gray-400 text-sm mb-1">Gerekli Fiyat Hareketi</p>
+                  <p className="text-gray-400 text-sm mb-1">{t('calculator.requiredMove')}</p>
                   <p className="text-2xl font-bold text-blue-400">
                     %{result.requiredMovePercent.toFixed(2)}
                   </p>
                 </div>
 
                 <div className="bg-gray-700/50 p-4 rounded-lg border border-green-500/30">
-                  <p className="text-gray-400 text-sm mb-1">Coinden Çıkış Fiyatı</p>
+                  <p className="text-gray-400 text-sm mb-1">{t('calculator.exitPrice')}</p>
                   <div className="flex items-center gap-3">
                     <span className="text-xl text-gray-300">{entryPrice}</span>
                     <ArrowRight className="text-gray-500" />
