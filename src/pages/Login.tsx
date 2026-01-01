@@ -60,7 +60,6 @@ const Login: React.FC = () => {
           <h2 className="text-3xl font-bold text-white">
             {mode === 'login' ? t('auth.login') : t('auth.signup')}
           </h2>
-          <p className="text-gray-400 mt-2">{t('auth.loginSubtitle')}</p>
         </div>
 
         {error && (
