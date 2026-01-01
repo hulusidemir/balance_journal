@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { LayoutDashboard, Calculator, Settings, LogOut } from 'lucide-react';
+import { LayoutDashboard, Calculator, Settings, LogOut, Scale } from 'lucide-react';
 import { clsx } from 'clsx';
 import { useTranslation } from 'react-i18next';
 import LanguageSwitcher from '../components/LanguageSwitcher';
@@ -35,9 +35,9 @@ const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
     <div className="flex h-screen bg-gray-900 text-white">
       {/* Sidebar */}
       <aside className="w-64 bg-gray-800 border-r border-gray-700 flex flex-col">
-        <div className="p-6 border-b border-gray-700">
-          <h1 className="text-2xl font-bold text-white">Balance Journal</h1>
-          <p className="text-sm mt-1 neon-text font-medium tracking-wider">by Hulusi DEMİR</p>
+        <div className="p-6 border-b border-gray-700 flex items-center gap-3">
+          <Scale className="text-green-500" size={28} />
+          <h1 className="text-xl font-bold text-white tracking-wider uppercase font-serif">Balance Journal</h1>
         </div>
         
         <nav className="flex-1 p-4 space-y-2">
@@ -60,12 +60,6 @@ const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
               </Link>
             );
           })}
-        </nav>
-
-        <div className="p-4 border-t border-gray-700 space-y-4">
-          <div className="flex justify-center">
-            <LanguageSwitcher />
-          </div>
           <button
             onClick={handleLogout}
             className="w-full flex items-center gap-3 px-4 py-3 text-red-400 hover:bg-gray-700 hover:text-red-300 rounded-lg transition-colors"
@@ -73,6 +67,12 @@ const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
             <LogOut size={20} />
             <span>{t('nav.logout')}</span>
           </button>
+        </nav>
+
+        <div className="p-4 border-t border-gray-700 space-y-4">
+          <div className="flex justify-center">
+            <LanguageSwitcher />
+          </div>
           <div className="text-center text-xs text-gray-500 pt-2 border-t border-gray-700/50">
             by Hulusi DEMİR
           </div>

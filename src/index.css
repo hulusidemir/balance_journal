@@ -35,34 +35,4 @@
   color: #fff !important;
 }
 
-/* Custom Neon Effect */
-.neon-text {
-  color: #fff;
-  text-shadow:
-    0 0 2px #fff,
-    0 0 5px #fff,
-    0 0 10px #bc13fe,
-    0 0 20px #bc13fe,
-    0 0 30px #bc13fe;
-  animation: neon-pulse 1.5s infinite alternate;
-}
-
-@keyframes neon-pulse {
-  from {
-    text-shadow:
-      0 0 2px #fff,
-      0 0 5px #fff,
-      0 0 10px #bc13fe,
-      0 0 20px #bc13fe,
-      0 0 30px #bc13fe;
-  }
-  to {
-    text-shadow:
-      0 0 1px #fff,
-      0 0 2px #fff,
-      0 0 5px #bc13fe,
-      0 0 10px #bc13fe,
-      0 0 15px #bc13fe;
-  }
-}
 
