@@ -36,7 +36,8 @@ const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
       {/* Sidebar */}
       <aside className="w-64 bg-gray-800 border-r border-gray-700 flex flex-col">
         <div className="p-6 border-b border-gray-700">
-          <h1 className="text-2xl font-bold text-green-500">TradeWallet</h1>
+          <h1 className="text-2xl font-bold text-white">Balance Journal</h1>
+          <p className="text-sm mt-1 neon-text font-medium tracking-wider">by Hulusi DEMİR</p>
         </div>
         
         <nav className="flex-1 p-4 space-y-2">
@@ -72,6 +73,9 @@ const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
             <LogOut size={20} />
             <span>{t('nav.logout')}</span>
           </button>
+          <div className="text-center text-xs text-gray-500 pt-2 border-t border-gray-700/50">
+            by Hulusi DEMİR
+          </div>
         </div>
       </aside>
 
