@@ -127,6 +127,7 @@
     "dashboard": "Dashboard",
     "calculator": "Calculator",
     "settings": "Settings",
+    "services": "Services",
     "logout": "Logout"
   }
 }

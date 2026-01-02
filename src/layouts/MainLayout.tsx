@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { LayoutDashboard, Calculator, Settings, LogOut, Wallet } from 'lucide-react';
+import { LayoutDashboard, Calculator, Settings, LogOut, Wallet, Layers, ChevronDown, ChevronRight, ExternalLink } from 'lucide-react';
 import { clsx } from 'clsx';
 import { useTranslation } from 'react-i18next';
 import LanguageSwitcher from '../components/LanguageSwitcher';
@@ -15,6 +15,7 @@ const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
   const navigate = useNavigate();
   const { t } = useTranslation();
   const { signOut } = useAuth();
+  const [isServicesOpen, setIsServicesOpen] = React.useState(false);
 
   const handleLogout = async () => {
     try {
@@ -60,6 +61,65 @@ const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
               </Link>
             );
           })}
+
+          {/* Services Section */}
+          <div>
+            <button
+              onClick={() => setIsServicesOpen(!isServicesOpen)}
+              className={clsx(
+                'w-full flex items-center justify-between px-4 py-3 rounded-lg transition-colors',
+                isServicesOpen ? 'text-white bg-gray-700' : 'text-gray-400 hover:bg-gray-700 hover:text-white'
+              )}
+            >
+              <div className="flex items-center gap-3">
+                <Layers size={20} />
+                <span>{t('nav.services')}</span>
+              </div>
+              {isServicesOpen ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
+            </button>
+            
+            {isServicesOpen && (
+              <div className="mt-1 ml-4 space-y-1 border-l border-gray-700 pl-2">
+                <a
+                  href="https://bybit-client.onrender.com/"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center gap-3 px-4 py-2 text-sm text-gray-400 hover:text-white hover:bg-gray-700/50 rounded-lg transition-colors"
+                >
+                  <ExternalLink size={16} />
+                  <span>Trader Paneli</span>
+                </a>
+                <a
+                  href="https://hulusiwarroom.onrender.com/"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center gap-3 px-4 py-2 text-sm text-gray-400 hover:text-white hover:bg-gray-700/50 rounded-lg transition-colors"
+                >
+                  <ExternalLink size={16} />
+                  <span>Coin MR</span>
+                </a>
+                <a
+                  href="https://bybit-screener-ui.onrender.com/"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center gap-3 px-4 py-2 text-sm text-gray-400 hover:text-white hover:bg-gray-700/50 rounded-lg transition-colors"
+                >
+                  <ExternalLink size={16} />
+                  <span>Coin Scan</span>
+                </a>
+                <a
+                  href="https://hulusitrade.vercel.app/"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center gap-3 px-4 py-2 text-sm text-gray-400 hover:text-white hover:bg-gray-700/50 rounded-lg transition-colors"
+                >
+                  <ExternalLink size={16} />
+                  <span>Trading Journal</span>
+                </a>
+              </div>
+            )}
+          </div>
+
           <button
             onClick={handleLogout}
             className="w-full flex items-center gap-3 px-4 py-3 text-red-400 hover:bg-gray-700 hover:text-red-300 rounded-lg transition-colors"
