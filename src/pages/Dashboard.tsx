@@ -281,7 +281,7 @@ const Dashboard: React.FC = () => {
                   const isTargetMet = day.actualBalance !== undefined && day.actualBalance >= day.expectedEndBalance;
 
                   return (
-                    <tr key={day.day} className="border-b border-gray-700 hover:bg-gray-750">
+                    <tr key={day.day} className="border-b border-gray-700 hover:bg-gray-700 transition-colors">
                       <td className="p-4">{day.day}</td>
                       <td className="p-4">{day.date}</td>
                       <td className="p-4 bg-blue-900/10">
