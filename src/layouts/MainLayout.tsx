@@ -107,15 +107,7 @@ const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
                   <ExternalLink size={16} />
                   <span>Coin Scan</span>
                 </a>
-                <a
-                  href="https://hulusitrade.vercel.app/"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="flex items-center gap-3 px-4 py-2 text-sm text-gray-400 hover:text-white hover:bg-gray-700/50 rounded-lg transition-colors"
-                >
-                  <ExternalLink size={16} />
-                  <span>Trading Journal</span>
-                </a>
+
               </div>
             )}
           </div>
