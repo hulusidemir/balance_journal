@@ -1,10 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import MainLayout from '../layouts/MainLayout';
 import { generatePlan, type PlanDay } from '../utils/planGenerator';
-import { getActivePlanId, type Plan } from '../utils/storage';
+import { getActivePlanId, getWithdrawals, type Plan, type Withdrawal, addWithdrawal, removeWithdrawal } from '../utils/storage';
 import { api } from '../services/api';
 import { useNavigate } from 'react-router-dom';
-import { ChevronLeft, ChevronRight, TrendingUp, X, Wallet, Calendar, Target, ArrowUpRight } from 'lucide-react';
+import { ChevronLeft, ChevronRight, TrendingUp, X, Wallet, Calendar, Target, ArrowUpRight, ArrowDownLeft, Trash2 } from 'lucide-react';
 import { clsx } from 'clsx';
 import { useTranslation } from 'react-i18next';
 import {
@@ -32,12 +32,20 @@ const Dashboard: React.FC = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const [showProjection, setShowProjection] = useState(false);
   const [showChart, setShowChart] = useState(false);
+  const [showWithdrawalModal, setShowWithdrawalModal] = useState(false);
   const [chartRange, setChartRange] = useState<number | 'all'>(30);
   const [projectionMode, setProjectionMode] = useState<'balance' | 'date'>('balance');
   const [targetDate, setTargetDate] = useState<Date | null>(null);
   const [projectionCurrentBalance, setProjectionCurrentBalance] = useState<number>(0);
   const [projectionDailyRate, setProjectionDailyRate] = useState<number>(10);
   const [projectionResult, setProjectionResult] = useState<string | null>(null);
+  
+  // Withdrawal Form State
+  const [withdrawalAmount, setWithdrawalAmount] = useState<string>('');
+  const [withdrawalDate, setWithdrawalDate] = useState<Date | null>(new Date());
+  const [withdrawalType, setWithdrawalType] = useState<'one-time' | 'periodic'>('one-time');
+  const [withdrawalFrequency, setWithdrawalFrequency] = useState<'daily' | 'weekly' | 'monthly'>('monthly');
+
   const itemsPerPage = 15;
 
   useEffect(() => {
@@ -52,6 +60,9 @@ const Dashboard: React.FC = () => {
       if (activeId) {
         const currentActivePlan = plans.find(p => p.id === activeId);
         if (currentActivePlan) {
+          // Merge local withdrawals
+          currentActivePlan.withdrawals = getWithdrawals(activeId);
+          
           setActivePlan(currentActivePlan);
           loadPlanData(currentActivePlan);
         } else {
@@ -66,7 +77,7 @@ const Dashboard: React.FC = () => {
   };
 
   const loadPlanData = (currentPlan: Plan) => {
-    const generatedPlan = generatePlan(currentPlan.settings);
+    const generatedPlan = generatePlan(currentPlan.settings, currentPlan.withdrawals);
     
     generatedPlan.forEach(day => {
       if (currentPlan.progress[day.day]) {
@@ -75,6 +86,44 @@ const Dashboard: React.FC = () => {
     });
     
     setPlan(generatedPlan);
+  };
+
+  const handleAddWithdrawal = async () => {
+    if (!activePlan || !withdrawalAmount || !withdrawalDate) return;
+
+    const amount = parseFloat(withdrawalAmount);
+    if (isNaN(amount) || amount <= 0) return;
+
+    const withdrawal: Omit<Withdrawal, 'id'> = {
+      amount,
+      date: withdrawalDate.toISOString().split('T')[0],
+      type: withdrawalType,
+      frequency: withdrawalType === 'periodic' ? withdrawalFrequency : undefined
+    };
+
+    // Update local state
+    const newWithdrawal = addWithdrawal(activePlan.id, withdrawal);
+    if (newWithdrawal) {
+      const updatedPlan = {
+        ...activePlan,
+        withdrawals: [...activePlan.withdrawals, newWithdrawal]
+      };
+      setActivePlan(updatedPlan);
+      loadPlanData(updatedPlan);
+      setShowWithdrawalModal(false);
+      setWithdrawalAmount('');
+    }
+  };
+
+  const handleDeleteWithdrawal = (id: string) => {
+    if (!activePlan) return;
+    removeWithdrawal(activePlan.id, id);
+    const updatedPlan = {
+      ...activePlan,
+      withdrawals: activePlan.withdrawals.filter(w => w.id !== id)
+    };
+    setActivePlan(updatedPlan);
+    loadPlanData(updatedPlan);
   };
 
   const handleBalanceChange = async (dayIndex: number, value: string) => {
@@ -237,6 +286,13 @@ const Dashboard: React.FC = () => {
             </h2>
             <div className="flex gap-2 w-full sm:w-auto">
               <button 
+                onClick={() => setShowWithdrawalModal(true)}
+                className="flex-1 sm:flex-none px-4 py-2 bg-red-600/20 text-red-400 hover:bg-red-600/30 rounded-lg transition-colors text-sm font-medium text-center flex items-center justify-center gap-2"
+              >
+                <ArrowDownLeft size={16} />
+                {t('dashboard.withdraw')}
+              </button>
+              <button 
                 onClick={() => setShowProjection(true)}
                 className="flex-1 sm:flex-none px-4 py-2 bg-blue-600/20 text-blue-400 hover:bg-blue-600/30 rounded-lg transition-colors text-sm font-medium text-center"
               >
@@ -251,6 +307,7 @@ const Dashboard: React.FC = () => {
                 <tr>
                   <th className="p-4 border-b border-gray-700">{t('dashboard.table.no')}</th>
                   <th className="p-4 border-b border-gray-700">{t('dashboard.table.date')}</th>
+                  <th className="p-4 border-b border-gray-700 text-red-400">{t('dashboard.table.withdrawal')}</th>
                   <th className="p-4 border-b border-gray-700 bg-blue-900/20 text-blue-300">{t('dashboard.table.balanceInput')}</th>
                   <th className="p-4 border-b border-gray-700">{t('dashboard.table.expectedBalance')}</th>
                   <th className="p-4 border-b border-gray-700">{t('dashboard.table.expectedProfit')}</th>
@@ -292,6 +349,9 @@ const Dashboard: React.FC = () => {
                     <tr key={day.day} className="border-b border-gray-700 hover:bg-gray-700 transition-colors">
                       <td className="p-4">{day.day}</td>
                       <td className="p-4">{day.date}</td>
+                      <td className="p-4 text-red-400 font-medium">
+                        {day.withdrawalAmount ? formatCurrency(day.withdrawalAmount) : '-'}
+                      </td>
                       <td className="p-4 bg-blue-900/10">
                         <input
                           type="number"
@@ -462,6 +522,121 @@ const Dashboard: React.FC = () => {
           </div>
         )}
 
+        {/* Withdrawal Modal */}
+        {showWithdrawalModal && (
+          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 backdrop-blur-sm p-4">
+            <div className="bg-gray-800 rounded-xl border border-gray-700 shadow-2xl max-w-md w-full p-6">
+              <div className="flex justify-between items-center mb-4">
+                <h3 className="text-xl font-bold text-white">{t('dashboard.addWithdrawal')}</h3>
+                <button onClick={() => setShowWithdrawalModal(false)} className="text-gray-400 hover:text-white">
+                  <X size={24} />
+                </button>
+              </div>
+
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm text-gray-400 mb-1">{t('dashboard.amount')}</label>
+                  <input 
+                    type="number" 
+                    value={withdrawalAmount}
+                    onChange={(e) => setWithdrawalAmount(e.target.value)}
+                    className="w-full bg-gray-700 border border-gray-600 rounded px-3 py-2 text-white focus:outline-none focus:border-blue-500"
+                    placeholder="0.00"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm text-gray-400 mb-1">{t('dashboard.date')}</label>
+                  <div className="w-full">
+                    <DatePicker
+                      selected={withdrawalDate}
+                      onChange={(date: Date | null) => setWithdrawalDate(date)}
+                      dateFormat="d MMMM yyyy"
+                      locale={i18n.language === 'tr' ? 'tr' : 'en'}
+                      className="w-full bg-gray-700 border border-gray-600 rounded px-3 py-2 text-white focus:outline-none focus:border-blue-500"
+                      wrapperClassName="w-full"
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-sm text-gray-400 mb-1">{t('dashboard.type')}</label>
+                  <div className="flex bg-gray-700 rounded-lg p-1">
+                    <button
+                      onClick={() => setWithdrawalType('one-time')}
+                      className={clsx(
+                        "flex-1 py-2 rounded-md text-sm font-medium transition-colors",
+                        withdrawalType === 'one-time' ? "bg-blue-600 text-white shadow" : "text-gray-400 hover:text-white"
+                      )}
+                    >
+                      {t('dashboard.oneTime')}
+                    </button>
+                    <button
+                      onClick={() => setWithdrawalType('periodic')}
+                      className={clsx(
+                        "flex-1 py-2 rounded-md text-sm font-medium transition-colors",
+                        withdrawalType === 'periodic' ? "bg-blue-600 text-white shadow" : "text-gray-400 hover:text-white"
+                      )}
+                    >
+                      {t('dashboard.periodic')}
+                    </button>
+                  </div>
+                </div>
+
+                {withdrawalType === 'periodic' && (
+                  <div>
+                    <label className="block text-sm text-gray-400 mb-1">{t('dashboard.frequency')}</label>
+                    <select
+                      value={withdrawalFrequency}
+                      onChange={(e) => setWithdrawalFrequency(e.target.value as any)}
+                      className="w-full bg-gray-700 border border-gray-600 rounded px-3 py-2 text-white focus:outline-none focus:border-blue-500"
+                    >
+                      <option value="daily">{t('dashboard.daily')}</option>
+                      <option value="weekly">{t('dashboard.weekly')}</option>
+                      <option value="monthly">{t('dashboard.monthly')}</option>
+                    </select>
+                  </div>
+                )}
+
+                <button 
+                  onClick={handleAddWithdrawal}
+                  className="w-full bg-red-600 hover:bg-red-700 text-white font-bold py-2 rounded-lg transition-colors flex items-center justify-center gap-2"
+                >
+                  <ArrowDownLeft size={20} />
+                  {t('dashboard.addWithdrawal')}
+                </button>
+
+                {/* List of active withdrawals */}
+                {activePlan?.withdrawals && activePlan.withdrawals.length > 0 && (
+                  <div className="mt-6 pt-6 border-t border-gray-700">
+                    <h4 className="text-sm font-medium text-gray-400 mb-3">{t('dashboard.activeWithdrawals')}</h4>
+                    <div className="space-y-2 max-h-40 overflow-y-auto">
+                      {activePlan.withdrawals.map(w => (
+                        <div key={w.id} className="flex justify-between items-center bg-gray-700/50 p-2 rounded border border-gray-600">
+                          <div>
+                            <div className="text-white font-medium">{formatCurrency(w.amount)}</div>
+                            <div className="text-xs text-gray-400">
+                              {w.type === 'one-time' 
+                                ? new Date(w.date).toLocaleDateString() 
+                                : `${t('dashboard.periodic')} - ${t(`dashboard.${w.frequency}`)}`}
+                            </div>
+                          </div>
+                          <button 
+                            onClick={() => handleDeleteWithdrawal(w.id)}
+                            className="text-red-400 hover:text-red-300 p-1"
+                          >
+                            <Trash2 size={16} />
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* Projection Modal */}
         {showProjection && (
           <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 backdrop-blur-sm p-4">
@@ -564,6 +739,31 @@ const Dashboard: React.FC = () => {
                     }
                     baseDate.setHours(0, 0, 0, 0);
 
+                    // Helper to check withdrawal
+                    const getWithdrawalForDate = (d: Date) => {
+                        if (!activePlan?.withdrawals) return 0;
+                        let amount = 0;
+                        
+                        activePlan.withdrawals.forEach(w => {
+                            const wDate = new Date(w.date);
+                            wDate.setHours(0,0,0,0);
+                            
+                            if (d.getTime() < wDate.getTime()) return;
+
+                            if (w.type === 'one-time') {
+                                if (d.getTime() === wDate.getTime()) amount += w.amount;
+                            } else if (w.type === 'periodic') {
+                                const diffTime = Math.abs(d.getTime() - wDate.getTime());
+                                const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+                                
+                                if (w.frequency === 'daily') amount += w.amount;
+                                else if (w.frequency === 'weekly' && diffDays % 7 === 0) amount += w.amount;
+                                else if (w.frequency === 'monthly' && d.getDate() === wDate.getDate()) amount += w.amount;
+                            }
+                        });
+                        return amount;
+                    };
+
                     if (projectionMode === 'balance') {
                       const target = Number((document.getElementById('target-balance-input') as HTMLInputElement).value);
                       if (!target || target <= projectionCurrentBalance) {
@@ -571,8 +771,32 @@ const Dashboard: React.FC = () => {
                         return;
                       }
                       
-                      // days = log(Target/Current) / log(1 + daily%)
-                      const daysNeeded = Math.ceil(Math.log(target / projectionCurrentBalance) / Math.log(1 + dailyRate));
+                      let tempBalance = projectionCurrentBalance;
+                      let daysNeeded = 0;
+                      const currentDate = new Date(baseDate);
+                      
+                      // Safety break to prevent infinite loop
+                      while (tempBalance < target && daysNeeded < 3650) {
+                          daysNeeded++;
+                          currentDate.setDate(currentDate.getDate() + 1);
+                          
+                          // Apply profit
+                          tempBalance += tempBalance * dailyRate;
+                          
+                          // Apply withdrawal
+                          const wAmount = getWithdrawalForDate(currentDate);
+                          if (wAmount > 0) tempBalance -= wAmount;
+                          
+                          if (tempBalance <= 0) {
+                              setProjectionResult("Bakiye sıfırlandı veya eksiye düştü."); // Hardcoded fallback
+                              return;
+                          }
+                      }
+                      
+                      if (daysNeeded >= 3650) {
+                           setProjectionResult("Hedefe ulaşmak çok uzun sürüyor.");
+                           return;
+                      }
                       
                       const tDate = new Date(baseDate);
                       tDate.setDate(tDate.getDate() + daysNeeded);
@@ -595,13 +819,20 @@ const Dashboard: React.FC = () => {
                         return;
                       }
 
-                      // Future = Current * (1 + rate)^days
-                      const futureBalance = projectionCurrentBalance * Math.pow(1 + dailyRate, diffDays);
+                      let tempBalance = projectionCurrentBalance;
+                      const currentDate = new Date(baseDate);
+
+                      for(let i=0; i<diffDays; i++) {
+                          currentDate.setDate(currentDate.getDate() + 1);
+                          tempBalance += tempBalance * dailyRate;
+                          const wAmount = getWithdrawalForDate(currentDate);
+                          if (wAmount > 0) tempBalance -= wAmount;
+                      }
                       
                       setProjectionResult(t('dashboard.projection.resultFutureBalance', { 
                         date: tDate.toLocaleDateString(i18n.language === 'tr' ? 'tr-TR' : 'en-US'), 
                         days: diffDays, 
-                        balance: formatCurrency(futureBalance) 
+                        balance: formatCurrency(tempBalance) 
                       }));
                     }
                   }}

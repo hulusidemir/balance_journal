@@ -8,6 +8,7 @@ const mapPlanFromDb = (row: any): Plan => ({
   name: row.name,
   settings: row.settings,
   progress: {}, // Will be populated separately
+  withdrawals: [], // Initialize empty, will be populated if available or merged
   createdAt: row.created_at
 });
 
