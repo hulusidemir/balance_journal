@@ -36,6 +36,8 @@ const Dashboard: React.FC = () => {
   const [projectionMode, setProjectionMode] = useState<'balance' | 'date'>('balance');
   const [targetDate, setTargetDate] = useState<Date | null>(null);
   const [projectionCurrentBalance, setProjectionCurrentBalance] = useState<number>(0);
+  const [projectionDailyRate, setProjectionDailyRate] = useState<number>(10);
+  const [projectionResult, setProjectionResult] = useState<string | null>(null);
   const itemsPerPage = 15;
 
   useEffect(() => {
@@ -102,6 +104,12 @@ const Dashboard: React.FC = () => {
   };
 
   const settings = activePlan?.settings;
+
+  useEffect(() => {
+    if (settings?.dailyProfitTargetPercent) {
+      setProjectionDailyRate(settings.dailyProfitTargetPercent);
+    }
+  }, [settings]);
 
   const totalPages = Math.ceil(plan.length / itemsPerPage);
   const currentData = plan.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
@@ -460,14 +468,14 @@ const Dashboard: React.FC = () => {
             <div className="bg-gray-800 rounded-xl border border-gray-700 shadow-2xl max-w-md w-full p-6">
               <div className="flex justify-between items-center mb-4">
                 <h3 className="text-xl font-bold text-white">{t('dashboard.projection.title')}</h3>
-                <button onClick={() => setShowProjection(false)} className="text-gray-400 hover:text-white">
+                <button onClick={() => { setShowProjection(false); setProjectionResult(null); }} className="text-gray-400 hover:text-white">
                   <X size={24} />
                 </button>
               </div>
 
               <div className="flex bg-gray-700 rounded-lg p-1 mb-6">
                 <button
-                  onClick={() => setProjectionMode('balance')}
+                  onClick={() => { setProjectionMode('balance'); setProjectionResult(null); }}
                   className={clsx(
                     "flex-1 py-2 rounded-md text-sm font-medium transition-colors",
                     projectionMode === 'balance' ? "bg-blue-600 text-white shadow" : "text-gray-400 hover:text-white"
@@ -476,7 +484,7 @@ const Dashboard: React.FC = () => {
                   {t('dashboard.projection.modeBalance')}
                 </button>
                 <button
-                  onClick={() => setProjectionMode('date')}
+                  onClick={() => { setProjectionMode('date'); setProjectionResult(null); }}
                   className={clsx(
                     "flex-1 py-2 rounded-md text-sm font-medium transition-colors",
                     projectionMode === 'date' ? "bg-blue-600 text-white shadow" : "text-gray-400 hover:text-white"
@@ -493,6 +501,16 @@ const Dashboard: React.FC = () => {
                     type="number" 
                     value={projectionCurrentBalance}
                     onChange={(e) => setProjectionCurrentBalance(Number(e.target.value))}
+                    className="w-full bg-gray-700 border border-gray-600 rounded px-3 py-2 text-white focus:outline-none focus:border-blue-500"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm text-gray-400 mb-1">{t('settings.dailyProfitTarget')} (%)</label>
+                  <input 
+                    type="number" 
+                    value={projectionDailyRate}
+                    onChange={(e) => setProjectionDailyRate(Number(e.target.value))}
                     className="w-full bg-gray-700 border border-gray-600 rounded px-3 py-2 text-white focus:outline-none focus:border-blue-500"
                   />
                 </div>
@@ -527,7 +545,7 @@ const Dashboard: React.FC = () => {
 
                 <button 
                   onClick={() => {
-                    const dailyRate = (settings?.dailyProfitTargetPercent || 10) / 100;
+                    const dailyRate = projectionDailyRate / 100;
                     
                     // Calculate Base Date (Start of projection)
                     let baseDate = new Date();
@@ -549,7 +567,7 @@ const Dashboard: React.FC = () => {
                     if (projectionMode === 'balance') {
                       const target = Number((document.getElementById('target-balance-input') as HTMLInputElement).value);
                       if (!target || target <= projectionCurrentBalance) {
-                        alert(t('dashboard.projection.errorTarget'));
+                        setProjectionResult(t('dashboard.projection.errorTarget'));
                         return;
                       }
                       
@@ -559,10 +577,10 @@ const Dashboard: React.FC = () => {
                       const tDate = new Date(baseDate);
                       tDate.setDate(tDate.getDate() + daysNeeded);
                       
-                      alert(t('dashboard.projection.resultDays', { days: daysNeeded }) + '\n' + t('dashboard.projection.resultDate', { date: tDate.toLocaleDateString(i18n.language === 'tr' ? 'tr-TR' : 'en-US') }));
+                      setProjectionResult(t('dashboard.projection.resultDays', { days: daysNeeded }) + ' - ' + t('dashboard.projection.resultDate', { date: tDate.toLocaleDateString(i18n.language === 'tr' ? 'tr-TR' : 'en-US') }));
                     } else {
                       if (!targetDate) {
-                        alert(t('dashboard.projection.errorDate'));
+                        setProjectionResult(t('dashboard.projection.errorDate'));
                         return;
                       }
 
@@ -573,14 +591,14 @@ const Dashboard: React.FC = () => {
                       const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
 
                       if (diffDays <= 0) {
-                        alert(t('dashboard.projection.errorFutureDate'));
+                        setProjectionResult(t('dashboard.projection.errorFutureDate'));
                         return;
                       }
 
                       // Future = Current * (1 + rate)^days
                       const futureBalance = projectionCurrentBalance * Math.pow(1 + dailyRate, diffDays);
                       
-                      alert(t('dashboard.projection.resultFutureBalance', { 
+                      setProjectionResult(t('dashboard.projection.resultFutureBalance', { 
                         date: tDate.toLocaleDateString(i18n.language === 'tr' ? 'tr-TR' : 'en-US'), 
                         days: diffDays, 
                         balance: formatCurrency(futureBalance) 
@@ -591,6 +609,12 @@ const Dashboard: React.FC = () => {
                 >
                   {t('dashboard.projection.calculate')}
                 </button>
+
+                {projectionResult && (
+                  <div className="mt-4 p-4 bg-gray-700/50 rounded-lg border border-gray-600 text-center">
+                    <p className="text-white font-medium whitespace-pre-line">{projectionResult}</p>
+                  </div>
+                )}
               </div>
             </div>
           </div>
