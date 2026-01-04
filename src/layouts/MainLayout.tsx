@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { LayoutDashboard, Calculator, Settings, LogOut, Wallet, Layers, ChevronDown, ChevronRight, ExternalLink } from 'lucide-react';
+import { LayoutDashboard, Calculator, Settings, LogOut, Wallet, Layers, ChevronDown, ChevronRight, ExternalLink, Menu, X } from 'lucide-react';
 import { clsx } from 'clsx';
 import { useTranslation } from 'react-i18next';
 import LanguageSwitcher from '../components/LanguageSwitcher';
@@ -16,6 +16,7 @@ const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
   const { t } = useTranslation();
   const { signOut } = useAuth();
   const [isServicesOpen, setIsServicesOpen] = React.useState(false);
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = React.useState(false);
 
   const handleLogout = async () => {
     try {
@@ -34,14 +35,47 @@ const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
 
   return (
     <div className="flex h-screen bg-gray-900 text-white">
+      {/* Mobile Header */}
+      <div className="md:hidden fixed top-0 left-0 right-0 h-16 bg-gray-800 border-b border-gray-700 flex items-center justify-between px-4 z-40">
+        <div className="flex items-center gap-3">
+          <Wallet className="text-green-500 shrink-0" size={24} />
+          <h1 className="text-lg font-bold text-white tracking-widest uppercase font-mono">Balance Journal</h1>
+        </div>
+        <button
+          onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+          className="text-gray-400 hover:text-white p-2"
+        >
+          {isMobileMenuOpen ? <X size={24} /> : <Menu size={24} />}
+        </button>
+      </div>
+
+      {/* Overlay */}
+      {isMobileMenuOpen && (
+        <div 
+          className="fixed inset-0 bg-black/50 z-40 md:hidden"
+          onClick={() => setIsMobileMenuOpen(false)}
+        />
+      )}
+
       {/* Sidebar */}
-      <aside className="w-64 bg-gray-800 border-r border-gray-700 flex flex-col">
-        <div className="p-6 border-b border-gray-700 flex items-center gap-3">
+      <aside className={clsx(
+        "fixed md:static inset-y-0 left-0 z-50 w-64 bg-gray-800 border-r border-gray-700 flex flex-col transition-transform duration-300 ease-in-out",
+        isMobileMenuOpen ? "translate-x-0" : "-translate-x-full md:translate-x-0"
+      )}>
+        <div className="p-6 border-b border-gray-700 flex items-center gap-3 hidden md:flex">
           <Wallet className="text-green-500 shrink-0" size={28} />
           <h1 className="text-lg font-bold text-white tracking-widest uppercase font-mono whitespace-nowrap">Balance Journal</h1>
         </div>
+
+        {/* Mobile Menu Header (inside sidebar) */}
+        <div className="p-4 border-b border-gray-700 flex items-center justify-between md:hidden">
+           <span className="text-gray-400">Menu</span>
+           <button onClick={() => setIsMobileMenuOpen(false)} className="text-gray-400 hover:text-white">
+             <X size={20} />
+           </button>
+        </div>
         
-        <nav className="flex-1 p-4 space-y-2">
+        <nav className="flex-1 p-4 space-y-2 overflow-y-auto">
           {navItems.map((item) => {
             const Icon = item.icon;
             const isActive = location.pathname === item.path;
@@ -49,6 +83,7 @@ const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
               <Link
                 key={item.path}
                 to={item.path}
+                onClick={() => setIsMobileMenuOpen(false)}
                 className={clsx(
                   'flex items-center gap-3 px-4 py-3 rounded-lg transition-colors',
                   isActive 
@@ -132,7 +167,7 @@ const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
       </aside>
 
       {/* Main Content */}
-      <main className="flex-1 overflow-auto bg-gray-900 p-8">
+      <main className="flex-1 overflow-auto bg-gray-900 p-4 md:p-8 pt-20 md:pt-8">
         {children}
       </main>
     </div>

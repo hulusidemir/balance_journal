@@ -231,14 +231,14 @@ const Dashboard: React.FC = () => {
 
         {/* Data Table Section */}
         <div className="bg-gray-800 rounded-xl border border-gray-700 shadow-lg overflow-hidden">
-          <div className="p-6 border-b border-gray-700 flex justify-between items-center">
+          <div className="p-6 border-b border-gray-700 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
             <h2 className="text-xl font-bold text-white">
               {activePlan?.name || t('dashboard.title')}
             </h2>
-            <div className="flex gap-2">
+            <div className="flex gap-2 w-full sm:w-auto">
               <button 
                 onClick={() => setShowProjection(true)}
-                className="px-4 py-2 bg-blue-600/20 text-blue-400 hover:bg-blue-600/30 rounded-lg transition-colors text-sm font-medium"
+                className="flex-1 sm:flex-none px-4 py-2 bg-blue-600/20 text-blue-400 hover:bg-blue-600/30 rounded-lg transition-colors text-sm font-medium text-center"
               >
                 {t('dashboard.projectionCalc')}
               </button>
@@ -361,20 +361,20 @@ const Dashboard: React.FC = () => {
         {/* Chart Modal */}
         {showChart && (
           <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 backdrop-blur-sm p-4">
-            <div className="bg-gray-800 rounded-xl border border-gray-700 shadow-2xl max-w-5xl w-full p-6 h-[80vh] flex flex-col">
-              <div className="flex justify-between items-center mb-6">
-                <div className="flex items-center gap-4">
+            <div className="bg-gray-800 rounded-xl border border-gray-700 shadow-2xl max-w-5xl w-full p-6 h-[80vh] flex flex-col relative">
+              <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
+                <div className="flex flex-col md:flex-row items-start md:items-center gap-4 w-full md:w-auto">
                   <h2 className="text-xl font-bold text-white flex items-center gap-2">
                     <TrendingUp className="text-blue-500" />
-                    {t('dashboard.chart.expected')} / {t('dashboard.chart.actual')}
+                    <span className="text-sm md:text-xl">{t('dashboard.chart.expected')} / {t('dashboard.chart.actual')}</span>
                   </h2>
-                  <div className="flex bg-gray-700 rounded-lg p-1 gap-1">
+                  <div className="flex bg-gray-700 rounded-lg p-1 gap-1 overflow-x-auto max-w-full">
                     {[30, 60, 90].map(days => (
                       <button
                         key={days}
                         onClick={() => setChartRange(days)}
                         className={clsx(
-                          "px-3 py-1 rounded-md text-sm font-medium transition-colors",
+                          "px-3 py-1 rounded-md text-sm font-medium transition-colors whitespace-nowrap",
                           chartRange === days 
                             ? "bg-blue-600 text-white shadow-sm" 
                             : "text-gray-400 hover:text-white hover:bg-gray-600"
@@ -386,7 +386,7 @@ const Dashboard: React.FC = () => {
                     <button
                       onClick={() => setChartRange('all')}
                       className={clsx(
-                        "px-3 py-1 rounded-md text-sm font-medium transition-colors",
+                        "px-3 py-1 rounded-md text-sm font-medium transition-colors whitespace-nowrap",
                         chartRange === 'all' 
                           ? "bg-blue-600 text-white shadow-sm" 
                           : "text-gray-400 hover:text-white hover:bg-gray-600"
@@ -396,7 +396,7 @@ const Dashboard: React.FC = () => {
                     </button>
                   </div>
                 </div>
-                <button onClick={() => setShowChart(false)} className="text-gray-400 hover:text-white">
+                <button onClick={() => setShowChart(false)} className="absolute top-4 right-4 md:static text-gray-400 hover:text-white">
                   <X size={24} />
                 </button>
               </div>
