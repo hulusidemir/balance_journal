@@ -344,9 +344,13 @@ const Dashboard: React.FC = () => {
                   
                   const isProfitPositive = actualProfit !== undefined && actualProfit >= 0;
                   const isTargetMet = day.actualBalance !== undefined && day.actualBalance >= day.expectedEndBalance;
+                  const isToday = day.date === new Date().toLocaleDateString('tr-TR');
 
                   return (
-                    <tr key={day.day} className="border-b border-gray-700 hover:bg-gray-700 transition-colors">
+                    <tr key={day.day} className={clsx(
+                      "border-b border-gray-700 transition-colors",
+                      isToday ? "bg-blue-900/30 hover:bg-blue-900/40 border-l-4 border-l-blue-500" : "hover:bg-gray-700"
+                    )}>
                       <td className="p-4">{day.day}</td>
                       <td className="p-4">{day.date}</td>
                       <td className="p-4 text-red-400 font-medium">
