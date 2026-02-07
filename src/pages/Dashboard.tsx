@@ -1,7 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import MainLayout from '../layouts/MainLayout';
 import { generatePlan, type PlanDay } from '../utils/planGenerator';
-import { getActivePlanId, getWithdrawals, type Plan, type Withdrawal, addWithdrawal, removeWithdrawal } from '../utils/storage';
+import { getActivePlanId, getWithdrawals, getDebts, type Plan, type Withdrawal, addWithdrawal, removeWithdrawal } from '../utils/storage';
+import { formatLocalDate } from '../utils/dateUtils';
+import { generateDebtWithdrawals } from '../utils/debtManager';
 import { api } from '../services/api';
 import { useNavigate } from 'react-router-dom';
 import { ChevronLeft, ChevronRight, TrendingUp, X, Wallet, Calendar, Target, ArrowUpRight, ArrowDownLeft, Trash2 } from 'lucide-react';
@@ -39,30 +41,49 @@ const Dashboard: React.FC = () => {
   const [projectionCurrentBalance, setProjectionCurrentBalance] = useState<number>(0);
   const [projectionDailyRate, setProjectionDailyRate] = useState<number>(10);
   const [projectionResult, setProjectionResult] = useState<string | null>(null);
-  
+
   // Withdrawal Form State
   const [withdrawalAmount, setWithdrawalAmount] = useState<string>('');
   const [withdrawalDate, setWithdrawalDate] = useState<Date | null>(new Date());
   const [withdrawalType, setWithdrawalType] = useState<'one-time' | 'periodic'>('one-time');
   const [withdrawalFrequency, setWithdrawalFrequency] = useState<'daily' | 'weekly' | 'monthly'>('monthly');
+  const [displayCurrency, setDisplayCurrency] = useState<'USD' | 'TRY'>('USD');
+  const [exchangeRate, setExchangeRate] = useState<number>(34);
 
   const itemsPerPage = 15;
 
   useEffect(() => {
     loadDashboardData();
+    fetchExchangeRate();
   }, [navigate]);
+
+  const fetchExchangeRate = async () => {
+    try {
+      const response = await fetch('https://api.exchangerate-api.com/v4/latest/USD');
+      const data = await response.json();
+      if (data.rates && data.rates.TRY) {
+        setExchangeRate(parseFloat(data.rates.TRY.toFixed(2)));
+      }
+    } catch (error) {
+      console.error('Error fetching exchange rate:', error);
+    }
+  };
 
   const loadDashboardData = async () => {
     try {
       const plans = await api.getPlans();
       const activeId = getActivePlanId();
-      
+
       if (activeId) {
         const currentActivePlan = plans.find(p => p.id === activeId);
         if (currentActivePlan) {
           // Merge local withdrawals
-          currentActivePlan.withdrawals = getWithdrawals(activeId);
-          
+          const manualWithdrawals = getWithdrawals(activeId);
+          const debts = getDebts(activeId);
+          const debtWithdrawals = generateDebtWithdrawals(debts);
+
+          currentActivePlan.withdrawals = [...manualWithdrawals, ...debtWithdrawals];
+
           setActivePlan(currentActivePlan);
           loadPlanData(currentActivePlan);
         } else {
@@ -78,13 +99,13 @@ const Dashboard: React.FC = () => {
 
   const loadPlanData = (currentPlan: Plan) => {
     const generatedPlan = generatePlan(currentPlan.settings, currentPlan.withdrawals);
-    
+
     generatedPlan.forEach(day => {
       if (currentPlan.progress[day.day]) {
         day.actualBalance = currentPlan.progress[day.day].actualBalance;
       }
     });
-    
+
     setPlan(generatedPlan);
   };
 
@@ -96,7 +117,7 @@ const Dashboard: React.FC = () => {
 
     const withdrawal: Omit<Withdrawal, 'id'> = {
       amount,
-      date: withdrawalDate.toISOString().split('T')[0],
+      date: formatLocalDate(withdrawalDate),
       type: withdrawalType,
       frequency: withdrawalType === 'periodic' ? withdrawalFrequency : undefined
     };
@@ -133,7 +154,7 @@ const Dashboard: React.FC = () => {
     const numValue = value === '' ? undefined : Number(value);
     newPlan[dayIndex].actualBalance = numValue;
     setPlan(newPlan);
-    
+
     try {
       await api.updateProgress(activePlan.id, newPlan[dayIndex].day, numValue);
       // Update local active plan state to reflect changes immediately if needed elsewhere
@@ -165,7 +186,11 @@ const Dashboard: React.FC = () => {
 
   const formatCurrency = (val?: number) => {
     if (val === undefined) return '-';
-    return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(val);
+    if (displayCurrency === 'USD') {
+      return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(val);
+    } else {
+      return new Intl.NumberFormat('tr-TR', { style: 'currency', currency: 'TRY' }).format(val * exchangeRate);
+    }
   };
 
   const formatPercent = (val?: number) => {
@@ -195,19 +220,29 @@ const Dashboard: React.FC = () => {
     [t('dashboard.chart.actual')]: p.actualBalance,
   }));
 
-  const filteredChartData = chartRange === 'all' 
-    ? chartData 
+  const filteredChartData = chartRange === 'all'
+    ? chartData
     : chartData.filter(p => {
-        const endDay = currentDayNumber > 0 ? currentDayNumber : 1;
-        const startDay = Math.max(1, endDay - (chartRange as number) + 1);
-        // Show range [Start, End + 5] to see a bit of future
-        return p.day >= startDay && p.day <= (endDay + 5);
-      });
+      const endDay = currentDayNumber > 0 ? currentDayNumber : 1;
+      const startDay = Math.max(1, endDay - (chartRange as number) + 1);
+      // Show range [Start, End + 5] to see a bit of future
+      return p.day >= startDay && p.day <= (endDay + 5);
+    });
 
   return (
     <MainLayout>
       <div className="max-w-7xl mx-auto space-y-6">
-        
+
+        {/* Currency Toggle Button */}
+        <div className="flex justify-end">
+          <button
+            onClick={() => setDisplayCurrency(displayCurrency === 'USD' ? 'TRY' : 'USD')}
+            className="flex items-center gap-2 bg-gray-700 hover:bg-gray-600 px-4 py-2 rounded-lg transition-colors"
+          >
+            {displayCurrency === 'USD' ? '$ → ₺' : '₺ → $'}
+          </button>
+        </div>
+
         {/* Header & Stats */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
           {/* Card 1: Current Balance */}
@@ -229,7 +264,7 @@ const Dashboard: React.FC = () => {
             </div>
             <div className="flex justify-between items-start">
               <h3 className="text-gray-400 text-sm font-medium mb-1">{t('dashboard.totalProfit')}</h3>
-              <button 
+              <button
                 onClick={() => setShowChart(true)}
                 className="text-gray-400 hover:text-white bg-gray-700/50 hover:bg-gray-700 p-1.5 rounded-lg transition-colors z-10"
                 title={t('dashboard.chart.all')}
@@ -255,7 +290,7 @@ const Dashboard: React.FC = () => {
               {currentDayNumber} <span className="text-lg text-gray-500">/ {settings?.days} {t('dashboard.day')}</span>
             </div>
             <div className="w-full bg-gray-700 h-2 rounded-full mt-3 overflow-hidden">
-              <div 
+              <div
                 className="bg-purple-500 h-full rounded-full transition-all duration-500"
                 style={{ width: `${Math.min(progressPercent, 100)}%` }}
               />
@@ -285,14 +320,14 @@ const Dashboard: React.FC = () => {
               {activePlan?.name || t('dashboard.title')}
             </h2>
             <div className="flex gap-2 w-full sm:w-auto">
-              <button 
+              <button
                 onClick={() => setShowWithdrawalModal(true)}
                 className="flex-1 sm:flex-none px-4 py-2 bg-red-600/20 text-red-400 hover:bg-red-600/30 rounded-lg transition-colors text-sm font-medium text-center flex items-center justify-center gap-2"
               >
                 <ArrowDownLeft size={16} />
                 {t('dashboard.withdraw')}
               </button>
-              <button 
+              <button
                 onClick={() => setShowProjection(true)}
                 className="flex-1 sm:flex-none px-4 py-2 bg-blue-600/20 text-blue-400 hover:bg-blue-600/30 rounded-lg transition-colors text-sm font-medium text-center"
               >
@@ -322,14 +357,14 @@ const Dashboard: React.FC = () => {
                 {currentData.map((day, idx) => {
                   const globalIndex = (currentPage - 1) * itemsPerPage + idx;
                   const prevDay = globalIndex > 0 ? plan[globalIndex - 1] : null;
-                  const prevBalance = prevDay 
-                    ? (prevDay.actualBalance ?? prevDay.expectedEndBalance) 
+                  const prevBalance = prevDay
+                    ? (prevDay.actualBalance ?? prevDay.expectedEndBalance)
                     : settings?.startBalance || 0;
 
-                  const actualProfit = day.actualBalance !== undefined 
-                    ? day.actualBalance - prevBalance 
+                  const actualProfit = day.actualBalance !== undefined
+                    ? day.actualBalance - prevBalance
                     : undefined;
-                  
+
                   const actualProfitPercent = actualProfit !== undefined && prevBalance !== 0
                     ? (actualProfit / prevBalance) * 100
                     : undefined;
@@ -341,7 +376,7 @@ const Dashboard: React.FC = () => {
                   const balanceDiffPercent = day.actualBalance !== undefined && day.expectedEndBalance !== 0
                     ? ((day.actualBalance - day.expectedEndBalance) / day.expectedEndBalance) * 100
                     : undefined;
-                  
+
                   const isProfitPositive = actualProfit !== undefined && actualProfit >= 0;
                   const isTargetMet = day.actualBalance !== undefined && day.actualBalance >= day.expectedEndBalance;
                   const isToday = day.date === new Date().toLocaleDateString('tr-TR');
@@ -439,8 +474,8 @@ const Dashboard: React.FC = () => {
                         onClick={() => setChartRange(days)}
                         className={clsx(
                           "px-3 py-1 rounded-md text-sm font-medium transition-colors whitespace-nowrap",
-                          chartRange === days 
-                            ? "bg-blue-600 text-white shadow-sm" 
+                          chartRange === days
+                            ? "bg-blue-600 text-white shadow-sm"
                             : "text-gray-400 hover:text-white hover:bg-gray-600"
                         )}
                       >
@@ -451,8 +486,8 @@ const Dashboard: React.FC = () => {
                       onClick={() => setChartRange('all')}
                       className={clsx(
                         "px-3 py-1 rounded-md text-sm font-medium transition-colors whitespace-nowrap",
-                        chartRange === 'all' 
-                          ? "bg-blue-600 text-white shadow-sm" 
+                        chartRange === 'all'
+                          ? "bg-blue-600 text-white shadow-sm"
                           : "text-gray-400 hover:text-white hover:bg-gray-600"
                       )}
                     >
@@ -464,23 +499,23 @@ const Dashboard: React.FC = () => {
                   <X size={24} />
                 </button>
               </div>
-              
+
               <div className="flex-1 w-full min-h-0">
                 <ResponsiveContainer width="100%" height="100%">
                   <AreaChart data={filteredChartData} margin={{ top: 10, right: 30, left: 0, bottom: 0 }}>
                     <defs>
                       <linearGradient id="colorExpected" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.3}/>
-                        <stop offset="95%" stopColor="#3b82f6" stopOpacity={0}/>
+                        <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.3} />
+                        <stop offset="95%" stopColor="#3b82f6" stopOpacity={0} />
                       </linearGradient>
                       <linearGradient id="colorActual" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="5%" stopColor="#10b981" stopOpacity={0.3}/>
-                        <stop offset="95%" stopColor="#10b981" stopOpacity={0}/>
+                        <stop offset="5%" stopColor="#10b981" stopOpacity={0.3} />
+                        <stop offset="95%" stopColor="#10b981" stopOpacity={0} />
                       </linearGradient>
                     </defs>
-                    <XAxis 
-                      dataKey="name" 
-                      stroke="#6b7280" 
+                    <XAxis
+                      dataKey="name"
+                      stroke="#6b7280"
                       tick={{ fill: '#9ca3af' }}
                       tickFormatter={(value, index) => {
                         // Show fewer labels if range is large
@@ -488,33 +523,33 @@ const Dashboard: React.FC = () => {
                         return index % interval === 0 ? value : '';
                       }}
                     />
-                    <YAxis 
-                      stroke="#6b7280" 
+                    <YAxis
+                      stroke="#6b7280"
                       tick={{ fill: '#9ca3af' }}
                       tickFormatter={(value) => `$${value}`}
                     />
                     <CartesianGrid strokeDasharray="3 3" stroke="#374151" vertical={false} />
-                    <Tooltip 
+                    <Tooltip
                       contentStyle={{ backgroundColor: '#1f2937', borderColor: '#374151', color: '#fff' }}
                       itemStyle={{ color: '#fff' }}
                       formatter={(value: number | undefined) => [formatCurrency(value ?? 0), '']}
                       labelStyle={{ color: '#9ca3af' }}
                     />
-                    <Area 
-                      type="monotone" 
-                      dataKey={t('dashboard.chart.expected')} 
-                      stroke="#3b82f6" 
-                      fillOpacity={1} 
-                      fill="url(#colorExpected)" 
+                    <Area
+                      type="monotone"
+                      dataKey={t('dashboard.chart.expected')}
+                      stroke="#3b82f6"
+                      fillOpacity={1}
+                      fill="url(#colorExpected)"
                       strokeWidth={2}
                       name={t('dashboard.chart.expected')}
                     />
-                    <Area 
-                      type="monotone" 
-                      dataKey={t('dashboard.chart.actual')} 
-                      stroke="#10b981" 
-                      fillOpacity={1} 
-                      fill="url(#colorActual)" 
+                    <Area
+                      type="monotone"
+                      dataKey={t('dashboard.chart.actual')}
+                      stroke="#10b981"
+                      fillOpacity={1}
+                      fill="url(#colorActual)"
                       strokeWidth={2}
                       connectNulls
                       name={t('dashboard.chart.actual')}
@@ -540,8 +575,8 @@ const Dashboard: React.FC = () => {
               <div className="space-y-4">
                 <div>
                   <label className="block text-sm text-gray-400 mb-1">{t('dashboard.amount')}</label>
-                  <input 
-                    type="number" 
+                  <input
+                    type="number"
                     value={withdrawalAmount}
                     onChange={(e) => setWithdrawalAmount(e.target.value)}
                     className="w-full bg-gray-700 border border-gray-600 rounded px-3 py-2 text-white focus:outline-none focus:border-blue-500"
@@ -602,7 +637,7 @@ const Dashboard: React.FC = () => {
                   </div>
                 )}
 
-                <button 
+                <button
                   onClick={handleAddWithdrawal}
                   className="w-full bg-red-600 hover:bg-red-700 text-white font-bold py-2 rounded-lg transition-colors flex items-center justify-center gap-2"
                 >
@@ -620,12 +655,12 @@ const Dashboard: React.FC = () => {
                           <div>
                             <div className="text-white font-medium">{formatCurrency(w.amount)}</div>
                             <div className="text-xs text-gray-400">
-                              {w.type === 'one-time' 
-                                ? new Date(w.date).toLocaleDateString() 
+                              {w.type === 'one-time'
+                                ? new Date(w.date).toLocaleDateString()
                                 : `${t('dashboard.periodic')} - ${t(`dashboard.${w.frequency}`)}`}
                             </div>
                           </div>
-                          <button 
+                          <button
                             onClick={() => handleDeleteWithdrawal(w.id)}
                             className="text-red-400 hover:text-red-300 p-1"
                           >
@@ -672,12 +707,12 @@ const Dashboard: React.FC = () => {
                   {t('dashboard.projection.modeDate')}
                 </button>
               </div>
-              
+
               <div className="space-y-4">
                 <div>
                   <label className="block text-sm text-gray-400 mb-1">{t('dashboard.currentBalance')}</label>
-                  <input 
-                    type="number" 
+                  <input
+                    type="number"
                     value={projectionCurrentBalance}
                     onChange={(e) => setProjectionCurrentBalance(Number(e.target.value))}
                     className="w-full bg-gray-700 border border-gray-600 rounded px-3 py-2 text-white focus:outline-none focus:border-blue-500"
@@ -686,19 +721,19 @@ const Dashboard: React.FC = () => {
 
                 <div>
                   <label className="block text-sm text-gray-400 mb-1">{t('settings.dailyProfitTarget')} (%)</label>
-                  <input 
-                    type="number" 
+                  <input
+                    type="number"
                     value={projectionDailyRate}
                     onChange={(e) => setProjectionDailyRate(Number(e.target.value))}
                     className="w-full bg-gray-700 border border-gray-600 rounded px-3 py-2 text-white focus:outline-none focus:border-blue-500"
                   />
                 </div>
-                
+
                 {projectionMode === 'balance' ? (
                   <div>
                     <label className="block text-sm text-gray-400 mb-1">{t('dashboard.projection.targetBalance')}</label>
-                    <input 
-                      type="number" 
+                    <input
+                      type="number"
                       id="target-balance-input"
                       className="w-full bg-gray-700 border border-gray-600 rounded px-3 py-2 text-white focus:outline-none focus:border-blue-500"
                       placeholder="10000"
@@ -722,16 +757,16 @@ const Dashboard: React.FC = () => {
                   </div>
                 )}
 
-                <button 
+                <button
                   onClick={() => {
                     const dailyRate = projectionDailyRate / 100;
-                    
+
                     // Calculate Base Date (Start of projection)
                     let baseDate = new Date();
                     if (settings?.startDate) {
                       const [y, m, d] = settings.startDate.split('-').map(Number);
                       const startDate = new Date(y, m - 1, d);
-                      
+
                       if (lastCompletedDay) {
                         // If plan is in progress, project from the last completed day
                         baseDate = new Date(startDate);
@@ -745,27 +780,27 @@ const Dashboard: React.FC = () => {
 
                     // Helper to check withdrawal
                     const getWithdrawalForDate = (d: Date) => {
-                        if (!activePlan?.withdrawals) return 0;
-                        let amount = 0;
-                        
-                        activePlan.withdrawals.forEach(w => {
-                            const wDate = new Date(w.date);
-                            wDate.setHours(0,0,0,0);
-                            
-                            if (d.getTime() < wDate.getTime()) return;
+                      if (!activePlan?.withdrawals) return 0;
+                      let amount = 0;
 
-                            if (w.type === 'one-time') {
-                                if (d.getTime() === wDate.getTime()) amount += w.amount;
-                            } else if (w.type === 'periodic') {
-                                const diffTime = Math.abs(d.getTime() - wDate.getTime());
-                                const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-                                
-                                if (w.frequency === 'daily') amount += w.amount;
-                                else if (w.frequency === 'weekly' && diffDays % 7 === 0) amount += w.amount;
-                                else if (w.frequency === 'monthly' && d.getDate() === wDate.getDate()) amount += w.amount;
-                            }
-                        });
-                        return amount;
+                      activePlan.withdrawals.forEach(w => {
+                        const wDate = new Date(w.date);
+                        wDate.setHours(0, 0, 0, 0);
+
+                        if (d.getTime() < wDate.getTime()) return;
+
+                        if (w.type === 'one-time') {
+                          if (d.getTime() === wDate.getTime()) amount += w.amount;
+                        } else if (w.type === 'periodic') {
+                          const diffTime = Math.abs(d.getTime() - wDate.getTime());
+                          const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+
+                          if (w.frequency === 'daily') amount += w.amount;
+                          else if (w.frequency === 'weekly' && diffDays % 7 === 0) amount += w.amount;
+                          else if (w.frequency === 'monthly' && d.getDate() === wDate.getDate()) amount += w.amount;
+                        }
+                      });
+                      return amount;
                     };
 
                     if (projectionMode === 'balance') {
@@ -774,37 +809,37 @@ const Dashboard: React.FC = () => {
                         setProjectionResult(t('dashboard.projection.errorTarget'));
                         return;
                       }
-                      
+
                       let tempBalance = projectionCurrentBalance;
                       let daysNeeded = 0;
                       const currentDate = new Date(baseDate);
-                      
+
                       // Safety break to prevent infinite loop
                       while (tempBalance < target && daysNeeded < 3650) {
-                          daysNeeded++;
-                          currentDate.setDate(currentDate.getDate() + 1);
-                          
-                          // Apply profit
-                          tempBalance += tempBalance * dailyRate;
-                          
-                          // Apply withdrawal
-                          const wAmount = getWithdrawalForDate(currentDate);
-                          if (wAmount > 0) tempBalance -= wAmount;
-                          
-                          if (tempBalance <= 0) {
-                              setProjectionResult("Bakiye sıfırlandı veya eksiye düştü."); // Hardcoded fallback
-                              return;
-                          }
+                        daysNeeded++;
+                        currentDate.setDate(currentDate.getDate() + 1);
+
+                        // Apply profit
+                        tempBalance += tempBalance * dailyRate;
+
+                        // Apply withdrawal
+                        const wAmount = getWithdrawalForDate(currentDate);
+                        if (wAmount > 0) tempBalance -= wAmount;
+
+                        if (tempBalance <= 0) {
+                          setProjectionResult("Bakiye sıfırlandı veya eksiye düştü."); // Hardcoded fallback
+                          return;
+                        }
                       }
-                      
+
                       if (daysNeeded >= 3650) {
-                           setProjectionResult("Hedefe ulaşmak çok uzun sürüyor.");
-                           return;
+                        setProjectionResult("Hedefe ulaşmak çok uzun sürüyor.");
+                        return;
                       }
-                      
+
                       const tDate = new Date(baseDate);
                       tDate.setDate(tDate.getDate() + daysNeeded);
-                      
+
                       setProjectionResult(t('dashboard.projection.resultDays', { days: daysNeeded }) + ' - ' + t('dashboard.projection.resultDate', { date: tDate.toLocaleDateString(i18n.language === 'tr' ? 'tr-TR' : 'en-US') }));
                     } else {
                       if (!targetDate) {
@@ -813,7 +848,7 @@ const Dashboard: React.FC = () => {
                       }
 
                       const tDate = new Date(targetDate);
-                      tDate.setHours(0,0,0,0);
+                      tDate.setHours(0, 0, 0, 0);
 
                       const diffTime = tDate.getTime() - baseDate.getTime();
                       const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
@@ -826,17 +861,17 @@ const Dashboard: React.FC = () => {
                       let tempBalance = projectionCurrentBalance;
                       const currentDate = new Date(baseDate);
 
-                      for(let i=0; i<diffDays; i++) {
-                          currentDate.setDate(currentDate.getDate() + 1);
-                          tempBalance += tempBalance * dailyRate;
-                          const wAmount = getWithdrawalForDate(currentDate);
-                          if (wAmount > 0) tempBalance -= wAmount;
+                      for (let i = 0; i < diffDays; i++) {
+                        currentDate.setDate(currentDate.getDate() + 1);
+                        tempBalance += tempBalance * dailyRate;
+                        const wAmount = getWithdrawalForDate(currentDate);
+                        if (wAmount > 0) tempBalance -= wAmount;
                       }
-                      
-                      setProjectionResult(t('dashboard.projection.resultFutureBalance', { 
-                        date: tDate.toLocaleDateString(i18n.language === 'tr' ? 'tr-TR' : 'en-US'), 
-                        days: diffDays, 
-                        balance: formatCurrency(tempBalance) 
+
+                      setProjectionResult(t('dashboard.projection.resultFutureBalance', {
+                        date: tDate.toLocaleDateString(i18n.language === 'tr' ? 'tr-TR' : 'en-US'),
+                        days: diffDays,
+                        balance: formatCurrency(tempBalance)
                       }));
                     }
                   }}

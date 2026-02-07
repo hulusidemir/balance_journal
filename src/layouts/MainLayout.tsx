@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { LayoutDashboard, Calculator, Settings, LogOut, Wallet, Layers, ChevronDown, ChevronRight, ExternalLink, Menu, X } from 'lucide-react';
+import { LayoutDashboard, Calculator, Settings, LogOut, Wallet, Layers, ChevronDown, ChevronRight, ExternalLink, Menu, X, CreditCard } from 'lucide-react';
 import { clsx } from 'clsx';
 import { useTranslation } from 'react-i18next';
 import LanguageSwitcher from '../components/LanguageSwitcher';
@@ -30,6 +30,7 @@ const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
   const navItems = [
     { path: '/dashboard', label: t('nav.dashboard'), icon: LayoutDashboard },
     { path: '/calculator', label: t('nav.calculator'), icon: Calculator },
+    { path: '/debts', label: t('debts.title'), icon: CreditCard },
     { path: '/settings', label: t('nav.settings'), icon: Settings },
   ];
 

@@ -1,5 +1,15 @@
 import type { PlanSettings } from './planGenerator';
 
+export interface Debt {
+  id: string;
+  description: string;
+  amount: number;
+  totalInstallments: number; // Duration (count of weeks or months)
+  frequency: 'weekly' | 'monthly';
+  paymentDay: number; // Day of month (1-31) or Day of week (1=Monday...7=Sunday)
+  startDate: string; // YYYY-MM-DD
+}
+
 export interface Withdrawal {
   id: string;
   amount: number;
@@ -25,6 +35,44 @@ export interface Plan {
 const PLANS_KEY = 'trade_wallet_plans';
 const ACTIVE_PLAN_KEY = 'trade_wallet_active_plan_id';
 const WITHDRAWALS_KEY = 'trade_wallet_withdrawals';
+const DEBTS_KEY = 'trade_wallet_debts';
+
+export const getDebts = (planId: string): Debt[] => {
+  const allDebts = JSON.parse(localStorage.getItem(DEBTS_KEY) || '{}');
+  return allDebts[planId] || [];
+};
+
+export const saveDebts = (planId: string, debts: Debt[]) => {
+  const allDebts = JSON.parse(localStorage.getItem(DEBTS_KEY) || '{}');
+  allDebts[planId] = debts;
+  localStorage.setItem(DEBTS_KEY, JSON.stringify(allDebts));
+};
+
+export const addDebt = (planId: string, debt: Omit<Debt, 'id'>) => {
+  const debts = getDebts(planId);
+  const newDebt: Debt = {
+    ...debt,
+    id: crypto.randomUUID()
+  };
+  debts.push(newDebt);
+  saveDebts(planId, debts);
+  return newDebt;
+};
+
+export const removeDebt = (planId: string, debtId: string) => {
+  const debts = getDebts(planId);
+  const newDebts = debts.filter(d => d.id !== debtId);
+  saveDebts(planId, newDebts);
+};
+
+export const updateDebt = (planId: string, debtId: string, updatedDebt: Omit<Debt, 'id'>) => {
+  const debts = getDebts(planId);
+  const debtIndex = debts.findIndex(d => d.id === debtId);
+  if (debtIndex === -1) return;
+  debts[debtIndex] = { ...updatedDebt, id: debtId };
+  saveDebts(planId, debts);
+};
+
 
 export const getWithdrawals = (planId: string): Withdrawal[] => {
   const allWithdrawals = JSON.parse(localStorage.getItem(WITHDRAWALS_KEY) || '{}');

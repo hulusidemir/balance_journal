@@ -4,6 +4,7 @@ import Login from './pages/Login';
 import Dashboard from './pages/Dashboard';
 import Calculator from './pages/Calculator';
 import Settings from './pages/Settings';
+import Debts from './pages/Debts';
 
 // Protected Route Component
 const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
@@ -34,6 +35,11 @@ function App() {
           <Route path="/calculator" element={
             <ProtectedRoute>
               <Calculator />
+            </ProtectedRoute>
+          } />
+          <Route path="/debts" element={
+            <ProtectedRoute>
+              <Debts />
             </ProtectedRoute>
           } />
           <Route path="/settings" element={
