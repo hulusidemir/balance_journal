@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import MainLayout from '../layouts/MainLayout';
 import { Save, Settings as SettingsIcon, Trash2, CheckCircle, Plus, Eye, X } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-import { setActivePlanId, getActivePlanId, type Plan } from '../utils/storage';
+import { setActivePlanId, getActivePlanId, type Plan, saveBybitCredentials, getBybitCredentials } from '../utils/storage';
 import { api } from '../services/api';
 import { generatePlan, type PlanDay } from '../utils/planGenerator';
 import DatePicker, { registerLocale } from 'react-datepicker';
@@ -27,19 +27,26 @@ const Settings: React.FC = () => {
   const [dailyProfitTargetPercent, setDailyProfitTargetPercent] = useState(10);
   const [days, setDays] = useState(365);
 
+  // API Settings
+  const [apiKey, setApiKey] = useState('');
+  const [apiSecret, setApiSecret] = useState('');
+
   // Preview State
   const [showPreview, setShowPreview] = useState(false);
   const [previewPlan, setPreviewPlan] = useState<PlanDay[]>([]);
 
   useEffect(() => {
     loadPlans();
+    const creds = getBybitCredentials();
+    setApiKey(creds.apiKey);
+    setApiSecret(creds.apiSecret);
   }, []);
 
   const loadPlans = async () => {
     try {
       const loadedPlans = await api.getPlans();
       setPlans(loadedPlans);
-      
+
       const currentActiveId = getActivePlanId();
       setActivePlanIdState(currentActiveId);
 
@@ -51,7 +58,7 @@ const Settings: React.FC = () => {
           const days = Object.keys(activePlan.progress).map(Number).sort((a, b) => b - a);
           const lastDay = days.length > 0 ? days[0] : null;
           const currentBalance = lastDay ? activePlan.progress[lastDay].actualBalance : activePlan.settings.startBalance;
-          
+
           setStartBalance(currentBalance);
           setDailyProfitTargetPercent(activePlan.settings.dailyProfitTargetPercent);
         }
@@ -91,7 +98,7 @@ const Settings: React.FC = () => {
     try {
       const newPlan = await api.createPlan(planName, settings);
       setActivePlanId(newPlan.id); // Automatically activate new plan
-      
+
       // Reset form
       setPlanName('');
       setShowPreview(false);
@@ -129,6 +136,11 @@ const Settings: React.FC = () => {
     return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(val);
   };
 
+  const handleSaveApiKeys = () => {
+    saveBybitCredentials(apiKey, apiSecret);
+    alert('API Credentials Saved');
+  };
+
   return (
     <MainLayout>
       {showPreview && (
@@ -139,14 +151,14 @@ const Settings: React.FC = () => {
                 <Eye className="text-blue-500" />
                 {t('settings.previewTitle')}: {planName}
               </h2>
-              <button 
+              <button
                 onClick={() => setShowPreview(false)}
                 className="text-gray-400 hover:text-white transition-colors"
               >
                 <X size={24} />
               </button>
             </div>
-            
+
             <div className="p-6 overflow-auto flex-1">
               <div className="grid grid-cols-2 gap-4 mb-6">
                 <div className="bg-gray-700/30 p-3 rounded-lg">
@@ -216,7 +228,7 @@ const Settings: React.FC = () => {
               <Plus className="text-green-500" />
               {t('settings.createNew')}
             </h2>
-            
+
             <div className="space-y-4">
               <div>
                 <label className="block text-sm font-medium text-gray-400 mb-1">
@@ -312,13 +324,12 @@ const Settings: React.FC = () => {
             ) : (
               <div className="space-y-4">
                 {plans.map((plan) => (
-                  <div 
-                    key={plan.id} 
-                    className={`p-4 rounded-lg border transition-all ${
-                      activePlanId === plan.id 
-                        ? 'bg-green-900/20 border-green-500' 
-                        : 'bg-gray-700/30 border-gray-600 hover:border-gray-500'
-                    }`}
+                  <div
+                    key={plan.id}
+                    className={`p-4 rounded-lg border transition-all ${activePlanId === plan.id
+                      ? 'bg-green-900/20 border-green-500'
+                      : 'bg-gray-700/30 border-gray-600 hover:border-gray-500'
+                      }`}
                   >
                     <div className="flex justify-between items-start mb-3">
                       <div>
@@ -354,6 +365,48 @@ const Settings: React.FC = () => {
                 ))}
               </div>
             )}
+          </div>
+        </div>
+
+        {/* API Configuration */}
+        <div className="max-w-4xl mx-auto mt-8">
+          <div className="bg-gray-800 p-6 rounded-xl border border-gray-700 shadow-lg">
+            <h2 className="text-xl font-semibold text-white mb-6 border-b border-gray-700 pb-2 flex items-center gap-2">
+              <SettingsIcon className="text-blue-500" />
+              API Configuration (Bybit)
+            </h2>
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-400 mb-1">Bybit API Key</label>
+                <input
+                  type="password"
+                  value={apiKey}
+                  onChange={(e) => setApiKey(e.target.value)}
+                  className="w-full px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:border-blue-500"
+                  placeholder="Enter your API Key"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-400 mb-1">Bybit API Secret</label>
+                <input
+                  type="password"
+                  value={apiSecret}
+                  onChange={(e) => setApiSecret(e.target.value)}
+                  className="w-full px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:border-blue-500"
+                  placeholder="Enter your API Secret"
+                />
+              </div>
+              <button
+                onClick={handleSaveApiKeys}
+                className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 rounded-lg transition-colors flex items-center justify-center gap-2"
+              >
+                <Save size={20} />
+                Save Credentials
+              </button>
+              <p className="text-xs text-gray-500 text-center">
+                Cihazınızda saklanır (LocalStorage). Sunucuya gönderilmez.
+              </p>
+            </div>
           </div>
         </div>
       </div>

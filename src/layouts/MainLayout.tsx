@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { LayoutDashboard, Calculator, Settings, LogOut, Wallet, Layers, ChevronDown, ChevronRight, ExternalLink, Menu, X, CreditCard } from 'lucide-react';
+import { LayoutDashboard, Calculator, Settings, LogOut, Wallet, Layers, ChevronDown, ChevronRight, ExternalLink, Menu, X, CreditCard, BookOpen } from 'lucide-react';
 import { clsx } from 'clsx';
 import { useTranslation } from 'react-i18next';
 import LanguageSwitcher from '../components/LanguageSwitcher';
@@ -31,6 +31,7 @@ const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
     { path: '/dashboard', label: t('nav.dashboard'), icon: LayoutDashboard },
     { path: '/calculator', label: t('nav.calculator'), icon: Calculator },
     { path: '/debts', label: t('debts.title'), icon: CreditCard },
+    { path: '/journal', label: 'Trade Journal', icon: BookOpen },
     { path: '/settings', label: t('nav.settings'), icon: Settings },
   ];
 
@@ -52,7 +53,7 @@ const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
 
       {/* Overlay */}
       {isMobileMenuOpen && (
-        <div 
+        <div
           className="fixed inset-0 bg-black/50 z-40 md:hidden"
           onClick={() => setIsMobileMenuOpen(false)}
         />
@@ -70,12 +71,12 @@ const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
 
         {/* Mobile Menu Header (inside sidebar) */}
         <div className="p-4 border-b border-gray-700 flex items-center justify-between md:hidden">
-           <span className="text-gray-400">Menu</span>
-           <button onClick={() => setIsMobileMenuOpen(false)} className="text-gray-400 hover:text-white">
-             <X size={20} />
-           </button>
+          <span className="text-gray-400">Menu</span>
+          <button onClick={() => setIsMobileMenuOpen(false)} className="text-gray-400 hover:text-white">
+            <X size={20} />
+          </button>
         </div>
-        
+
         <nav className="flex-1 p-4 space-y-2 overflow-y-auto">
           {navItems.map((item) => {
             const Icon = item.icon;
@@ -87,8 +88,8 @@ const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
                 onClick={() => setIsMobileMenuOpen(false)}
                 className={clsx(
                   'flex items-center gap-3 px-4 py-3 rounded-lg transition-colors',
-                  isActive 
-                    ? 'bg-green-600 text-white' 
+                  isActive
+                    ? 'bg-green-600 text-white'
                     : 'text-gray-400 hover:bg-gray-700 hover:text-white'
                 )}
               >
@@ -113,7 +114,7 @@ const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
               </div>
               {isServicesOpen ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
             </button>
-            
+
             {isServicesOpen && (
               <div className="mt-1 ml-4 space-y-1 border-l border-gray-700 pl-2">
                 <a

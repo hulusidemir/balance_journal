@@ -117,7 +117,7 @@ export const createPlan = (name: string, settings: PlanSettings): Plan => {
   // So when we save, we should probably save the "raw" plan without withdrawals, or it doesn't matter.
   // But wait, if I save plans with withdrawals, then getPlans will have them in the object AND add them again?
   // No, getPlans maps and overwrites `withdrawals`.
-  
+
   plans.push(newPlan);
   // Strip withdrawals for saving to keep it clean
   const plansToSave = plans.map(({ withdrawals, ...rest }) => rest);
@@ -152,7 +152,7 @@ export const updatePlanProgress = (planId: string, day: number, actualBalance: n
   } else {
     plans[planIndex].progress[day] = { actualBalance };
   }
-  
+
   // Strip withdrawals
   const plansToSave = plans.map(({ withdrawals, ...rest }) => rest);
   localStorage.setItem(PLANS_KEY, JSON.stringify(plansToSave));
@@ -163,12 +163,12 @@ export const deletePlan = (planId: string) => {
   const newPlans = plans.filter(p => p.id !== planId);
   const plansToSave = newPlans.map(({ withdrawals, ...rest }) => rest);
   localStorage.setItem(PLANS_KEY, JSON.stringify(plansToSave));
-  
+
   // Also delete withdrawals
   const allWithdrawals = JSON.parse(localStorage.getItem(WITHDRAWALS_KEY) || '{}');
   delete allWithdrawals[planId];
   localStorage.setItem(WITHDRAWALS_KEY, JSON.stringify(allWithdrawals));
-  
+
   // If deleted plan was active, clear active plan
   if (getActivePlanId() === planId) {
     localStorage.removeItem(ACTIVE_PLAN_KEY);
@@ -188,4 +188,20 @@ export const getActivePlan = (): Plan | null => {
   if (!activeId) return null;
   const plans = getPlans();
   return plans.find(p => p.id === activeId) || null;
+};
+
+// Bybit Credentials
+const BYBIT_API_KEY = 'BYBIT_API_KEY';
+const BYBIT_API_SECRET = 'BYBIT_API_SECRET';
+
+export const saveBybitCredentials = (key: string, secret: string) => {
+  localStorage.setItem(BYBIT_API_KEY, key);
+  localStorage.setItem(BYBIT_API_SECRET, secret);
+};
+
+export const getBybitCredentials = () => {
+  return {
+    apiKey: localStorage.getItem(BYBIT_API_KEY) || '',
+    apiSecret: localStorage.getItem(BYBIT_API_SECRET) || ''
+  };
 };
