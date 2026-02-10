@@ -88,7 +88,7 @@ export const saveWithdrawals = (planId: string, withdrawals: Withdrawal[]) => {
 export const getPlans = (): Plan[] => {
   const plansJson = localStorage.getItem(PLANS_KEY);
   const plans = plansJson ? JSON.parse(plansJson) : [];
-  return plans.map((p: any) => ({
+  return plans.map((p: Plan) => ({
     ...p,
     withdrawals: getWithdrawals(p.id)
   }));
@@ -190,5 +190,5 @@ export const getActivePlan = (): Plan | null => {
   return plans.find(p => p.id === activeId) || null;
 };
 
-// Bybit Credentials
+
 

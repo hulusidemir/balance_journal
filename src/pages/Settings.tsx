@@ -27,33 +27,14 @@ const Settings: React.FC = () => {
   const [dailyProfitTargetPercent, setDailyProfitTargetPercent] = useState(10);
   const [days, setDays] = useState(365);
 
-  // API Settings
-  const [apiKey, setApiKey] = useState('');
-
+  // API Settings Removed
+  /* const [apiKey, setApiKey] = useState('');
   const [apiSecret, setApiSecret] = useState('');
-  const [isSavingKeys, setIsSavingKeys] = useState(false);
+  const [isSavingKeys, setIsSavingKeys] = useState(false); */
 
   // Preview State
   const [showPreview, setShowPreview] = useState(false);
   const [previewPlan, setPreviewPlan] = useState<PlanDay[]>([]);
-
-  useEffect(() => {
-    loadPlans();
-
-    loadSettings();
-  }, []);
-
-  const loadSettings = async () => {
-    try {
-      const settings = await api.getSettings();
-      if (settings) {
-        setApiKey(settings.apiKey);
-        setApiSecret(settings.apiSecret);
-      }
-    } catch (error) {
-      console.error('Error loading settings:', error);
-    }
-  };
 
   const loadPlans = async () => {
     try {
@@ -81,6 +62,11 @@ const Settings: React.FC = () => {
       alert(t('settings.alerts.errorLoad'));
     }
   };
+
+  useEffect(() => {
+    loadPlans();
+    // loadSettings(); // Settings no longer fetched here locally
+  }, []);
 
   const handlePreview = () => {
     if (!planName) {
@@ -149,7 +135,7 @@ const Settings: React.FC = () => {
     return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(val);
   };
 
-  const handleSaveApiKeys = async () => {
+  /* const handleSaveApiKeys = async () => {
     setIsSavingKeys(true);
     try {
       await api.updateSettings(apiKey, apiSecret);
@@ -160,7 +146,7 @@ const Settings: React.FC = () => {
     } finally {
       setIsSavingKeys(false);
     }
-  };
+  }; */
 
   return (
     <MainLayout>
@@ -389,52 +375,7 @@ const Settings: React.FC = () => {
           </div>
         </div>
 
-        {/* API Configuration */}
-        <div className="max-w-4xl mx-auto mt-8">
-          <div className="bg-gray-800 p-6 rounded-xl border border-gray-700 shadow-lg">
-            <h2 className="text-xl font-semibold text-white mb-6 border-b border-gray-700 pb-2 flex items-center gap-2">
-              <SettingsIcon className="text-blue-500" />
-              API Configuration (Bybit)
-            </h2>
-            <div className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-400 mb-1">Bybit API Key</label>
-                <input
-                  type="password"
-                  value={apiKey}
-                  onChange={(e) => setApiKey(e.target.value)}
-                  className="w-full px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:border-blue-500"
-                  placeholder="Enter your API Key"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-400 mb-1">Bybit API Secret</label>
-                <input
-                  type="password"
-                  value={apiSecret}
-                  onChange={(e) => setApiSecret(e.target.value)}
-                  className="w-full px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:border-blue-500"
-                  placeholder="Enter your API Secret"
-                />
-              </div>
-              <button
-                onClick={handleSaveApiKeys}
-                disabled={isSavingKeys}
-                className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 rounded-lg transition-colors flex items-center justify-center gap-2 disabled:opacity-50"
-              >
-                {isSavingKeys ? 'Saving...' : (
-                  <>
-                    <Save size={20} />
-                    Save Credentials
-                  </>
-                )}
-              </button>
-              <p className="text-xs text-gray-500 text-center">
-                Stored securely in the database. Only accessible to you.
-              </p>
-            </div>
-          </div>
-        </div>
+
       </div>
     </MainLayout>
   );

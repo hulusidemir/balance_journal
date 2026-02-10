@@ -52,21 +52,26 @@ const Dashboard: React.FC = () => {
 
   const itemsPerPage = 15;
 
-  useEffect(() => {
-    loadDashboardData();
-    fetchExchangeRate();
-  }, [navigate]);
-
   const fetchExchangeRate = async () => {
     try {
       const response = await fetch('https://api.exchangerate-api.com/v4/latest/USD');
       const data = await response.json();
-      if (data.rates && data.rates.TRY) {
-        setExchangeRate(parseFloat(data.rates.TRY.toFixed(2)));
-      }
+      setExchangeRate(data.rates.TRY);
     } catch (error) {
       console.error('Error fetching exchange rate:', error);
     }
+  };
+
+  const loadPlanData = (currentPlan: Plan) => {
+    const generatedPlan = generatePlan(currentPlan.settings, currentPlan.withdrawals);
+
+    generatedPlan.forEach(day => {
+      if (currentPlan.progress[day.day]) {
+        day.actualBalance = currentPlan.progress[day.day].actualBalance;
+      }
+    });
+
+    setPlan(generatedPlan);
   };
 
   const loadDashboardData = async () => {
@@ -97,17 +102,12 @@ const Dashboard: React.FC = () => {
     }
   };
 
-  const loadPlanData = (currentPlan: Plan) => {
-    const generatedPlan = generatePlan(currentPlan.settings, currentPlan.withdrawals);
+  useEffect(() => {
+    loadDashboardData();
+    fetchExchangeRate();
+  }, [navigate]);
 
-    generatedPlan.forEach(day => {
-      if (currentPlan.progress[day.day]) {
-        day.actualBalance = currentPlan.progress[day.day].actualBalance;
-      }
-    });
 
-    setPlan(generatedPlan);
-  };
 
   const handleAddWithdrawal = async () => {
     if (!activePlan || !withdrawalAmount || !withdrawalDate) return;

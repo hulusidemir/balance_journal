@@ -11,27 +11,23 @@ const Calculator: React.FC = () => {
   const [balance, setBalance] = useState<number>(1000);
   const [dailyProfitTargetPercent, setDailyProfitTargetPercent] = useState<number>(10);
   const [tradeCount, setTradeCount] = useState<number>(5);
-  
+
   const [leverage, setLeverage] = useState<number>(2);
   const [entryPrice, setEntryPrice] = useState<number>(100);
   const [direction, setDirection] = useState<'long' | 'short'>('long');
-  
+
   // Derived state for trade calculation
   const dailyTargetAmount = balance * (dailyProfitTargetPercent / 100);
   const targetProfitPerTradeAmount = dailyTargetAmount / tradeCount;
   const targetProfitPercent = (targetProfitPerTradeAmount / balance) * 100;
-  
-  const [result, setResult] = useState<TradeResult | null>(null);
 
-  useEffect(() => {
-    loadCalculatorDefaults();
-  }, []);
+  const [result, setResult] = useState<TradeResult | null>(null);
 
   const loadCalculatorDefaults = async () => {
     try {
       const plans = await api.getPlans();
       const activeId = getActivePlanId();
-      
+
       if (activeId) {
         const activePlan = plans.find(p => p.id === activeId);
         if (activePlan) {
@@ -39,7 +35,7 @@ const Calculator: React.FC = () => {
           const days = Object.keys(activePlan.progress).map(Number).sort((a, b) => b - a);
           const lastDay = days.length > 0 ? days[0] : null;
           const currentBalance = lastDay ? activePlan.progress[lastDay].actualBalance : activePlan.settings.startBalance;
-          
+
           setBalance(currentBalance);
           setDailyProfitTargetPercent(activePlan.settings.dailyProfitTargetPercent);
         }
@@ -48,6 +44,10 @@ const Calculator: React.FC = () => {
       console.error('Error loading calculator defaults:', error);
     }
   };
+
+  useEffect(() => {
+    loadCalculatorDefaults();
+  }, []);
 
   useEffect(() => {
     const res = calculateTrade({
@@ -79,60 +79,60 @@ const Calculator: React.FC = () => {
             {t('calculator.dailyPlan')}
           </h2>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-             <div>
-                <label className="block text-sm font-medium text-gray-400 mb-2">
-                  {t('calculator.balance')}
-                </label>
-                <input
-                  type="number"
-                  value={balance}
-                  onChange={(e) => setBalance(Number(e.target.value))}
-                  className="w-full px-4 py-3 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:border-green-500"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-400 mb-2">
-                  {t('calculator.dailyTargetPercent')}
-                </label>
-                <input
-                  type="number"
-                  value={dailyProfitTargetPercent}
-                  onChange={(e) => setDailyProfitTargetPercent(Number(e.target.value))}
-                  className="w-full px-4 py-3 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:border-green-500"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-400 mb-2">
-                  {t('calculator.tradeCount')}
-                </label>
-                <input
-                  type="number"
-                  value={tradeCount}
-                  onChange={(e) => setTradeCount(Number(e.target.value))}
-                  className="w-full px-4 py-3 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:border-green-500"
-                />
-              </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-400 mb-2">
+                {t('calculator.balance')}
+              </label>
+              <input
+                type="number"
+                value={balance}
+                onChange={(e) => setBalance(Number(e.target.value))}
+                className="w-full px-4 py-3 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:border-green-500"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-400 mb-2">
+                {t('calculator.dailyTargetPercent')}
+              </label>
+              <input
+                type="number"
+                value={dailyProfitTargetPercent}
+                onChange={(e) => setDailyProfitTargetPercent(Number(e.target.value))}
+                className="w-full px-4 py-3 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:border-green-500"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-400 mb-2">
+                {t('calculator.tradeCount')}
+              </label>
+              <input
+                type="number"
+                value={tradeCount}
+                onChange={(e) => setTradeCount(Number(e.target.value))}
+                className="w-full px-4 py-3 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:border-green-500"
+              />
+            </div>
           </div>
-          
+
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-6 pt-6 border-t border-gray-700/50">
-             <div className="bg-gray-700/30 p-4 rounded-lg">
-                <p className="text-gray-400 text-sm">{t('calculator.dailyTargetAmount')}</p>
-                <p className="text-xl font-bold text-green-400">
-                  ${dailyTargetAmount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                </p>
-             </div>
-             <div className="bg-gray-700/30 p-4 rounded-lg">
-                <p className="text-gray-400 text-sm">{t('calculator.targetPerTrade')}</p>
-                <p className="text-xl font-bold text-blue-400">
-                  ${targetProfitPerTradeAmount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                </p>
-             </div>
-             <div className="bg-gray-700/30 p-4 rounded-lg">
-                <p className="text-gray-400 text-sm">{t('calculator.targetPerTradePercent')}</p>
-                <p className="text-xl font-bold text-purple-400">
-                  %{targetProfitPercent.toFixed(2)}
-                </p>
-             </div>
+            <div className="bg-gray-700/30 p-4 rounded-lg">
+              <p className="text-gray-400 text-sm">{t('calculator.dailyTargetAmount')}</p>
+              <p className="text-xl font-bold text-green-400">
+                ${dailyTargetAmount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+              </p>
+            </div>
+            <div className="bg-gray-700/30 p-4 rounded-lg">
+              <p className="text-gray-400 text-sm">{t('calculator.targetPerTrade')}</p>
+              <p className="text-xl font-bold text-blue-400">
+                ${targetProfitPerTradeAmount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+              </p>
+            </div>
+            <div className="bg-gray-700/30 p-4 rounded-lg">
+              <p className="text-gray-400 text-sm">{t('calculator.targetPerTradePercent')}</p>
+              <p className="text-xl font-bold text-purple-400">
+                %{targetProfitPercent.toFixed(2)}
+              </p>
+            </div>
           </div>
         </div>
 
@@ -142,7 +142,7 @@ const Calculator: React.FC = () => {
             <h2 className="text-xl font-semibold text-white mb-6 border-b border-gray-700 pb-2">
               {t('calculator.tradeDetails')}
             </h2>
-            
+
             <div className="space-y-6">
               {/* Balance input removed from here as it is in Daily Plan */}
 
@@ -182,22 +182,20 @@ const Calculator: React.FC = () => {
                 <div className="grid grid-cols-2 gap-4">
                   <button
                     onClick={() => setDirection('long')}
-                    className={`flex items-center justify-center gap-2 py-3 rounded-lg border transition-colors ${
-                      direction === 'long'
+                    className={`flex items-center justify-center gap-2 py-3 rounded-lg border transition-colors ${direction === 'long'
                         ? 'bg-green-600/20 border-green-500 text-green-400'
                         : 'bg-gray-700 border-gray-600 text-gray-400 hover:bg-gray-600'
-                    }`}
+                      }`}
                   >
                     <TrendingUp size={20} />
                     {t('calculator.long')}
                   </button>
                   <button
                     onClick={() => setDirection('short')}
-                    className={`flex items-center justify-center gap-2 py-3 rounded-lg border transition-colors ${
-                      direction === 'short'
+                    className={`flex items-center justify-center gap-2 py-3 rounded-lg border transition-colors ${direction === 'short'
                         ? 'bg-red-600/20 border-red-500 text-red-400'
                         : 'bg-gray-700 border-gray-600 text-gray-400 hover:bg-gray-600'
-                    }`}
+                      }`}
                   >
                     <TrendingDown size={20} />
                     {t('calculator.short')}

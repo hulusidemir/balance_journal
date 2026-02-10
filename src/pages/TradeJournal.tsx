@@ -1,57 +1,51 @@
 import React, { useState, useEffect } from 'react';
 import MainLayout from '../layouts/MainLayout';
 import { useTranslation } from 'react-i18next';
-import { bybitService } from '../services/bybit';
 import { journalService, type TradeNote } from '../services/journal';
-import { Loader2, AlertCircle, Save, Calendar } from 'lucide-react';
-import { format } from 'date-fns';
-import { tr } from 'date-fns/locale/tr';
-import { enUS } from 'date-fns/locale/en-US';
+import { Loader2, Save, Calendar, AlertCircle } from 'lucide-react';
+
+// Define local interface replacing BybitExecution
+interface TradeExecution {
+    symbol: string;
+    execId: string;
+    orderId: string;
+    side: 'Buy' | 'Sell';
+    orderQty: string;
+    execPrice: string;
+    execValue: string;
+    execFee: string;
+    execTime: string;
+    execType: string;
+}
 
 const TradeJournal: React.FC = () => {
-    const { t, i18n } = useTranslation();
+    const { t } = useTranslation();
+    const [executions, setExecutions] = useState<TradeExecution[]>([]);
+    const [category, setCategory] = useState<'linear' | 'inverse'>('linear');
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
-    const [executions, setExecutions] = useState<any[]>([]);
-    const [activeOrders, setActiveOrders] = useState<any[]>([]);
     const [notes, setNotes] = useState<Record<string, TradeNote>>({});
     const [editingNoteId, setEditingNoteId] = useState<string | null>(null);
     const [noteText, setNoteText] = useState('');
-    const [category, setCategory] = useState<'linear' | 'inverse'>('linear');
-    const [limit] = useState(50);
-    const [nextPageCursor, setNextPageCursor] = useState('');
+
+
 
     useEffect(() => {
-        // Initial load
-        loadData(true);
-    }, [category]); // Only reload on category change automatically. Date changes differ.
+        loadData();
+    }, []);
 
-    const loadData = async (reset: boolean = false) => {
+    const loadData = async () => {
         setLoading(true);
         setError(null);
         try {
-            const cursor = reset ? undefined : nextPageCursor;
+            // Mock empty data or fetch from manual entry source in future
+            const mockExecutions: TradeExecution[] = [];
 
-            const [execData, orders] = await Promise.all([
-                bybitService.getExecutions(category, limit, undefined, undefined, cursor),
-                reset ? bybitService.getOpenOrders(category, limit) : Promise.resolve([])
-            ]);
+            setExecutions(mockExecutions);
 
-            if (reset) {
-                setExecutions(execData.list);
-                setActiveOrders(orders as any[]);
-            } else {
-                setExecutions(prev => [...prev, ...execData.list]);
-            }
-
-            setNextPageCursor(execData.nextPageCursor);
-
-            const tradeIds = execData.list.map(e => e.execId);
-            const orderIds = (orders as any[]).map(o => o.orderId);
-            const allIds = [...tradeIds, ...orderIds];
-
-            if (allIds.length > 0) {
-                const fetchedNotes = await journalService.getNotes(allIds);
+            if (mockExecutions.length > 0) {
+                const tradeIds = mockExecutions.map(e => e.execId);
+                const fetchedNotes = await journalService.getNotes(tradeIds);
                 setNotes(prev => {
                     const next = { ...prev };
                     fetchedNotes.forEach(n => {
@@ -60,54 +54,51 @@ const TradeJournal: React.FC = () => {
                     return next;
                 });
             }
-        } catch (err: any) {
+        } catch (err) {
             console.error(err);
-            setError(err.message || t('journal.noTrades'));
+            setError(t('journal.errorLoading'));
         } finally {
             setLoading(false);
         }
     };
 
     const handleFilter = () => {
-        loadData(true);
+        loadData();
     };
 
-    const handleLoadMore = () => {
-        loadData(false);
-    };
 
-    const handleSaveNote = async (execution: any) => {
+
+    const handleSaveNote = async (execution: TradeExecution) => {
         try {
             const note: TradeNote = {
-                trade_id: execution.execId || execution.orderId,
+                trade_id: execution.execId,
                 symbol: execution.symbol,
                 side: execution.side,
                 note: noteText
             };
 
-            const saved = await journalService.saveNote(note);
-            if (saved) {
+            const savedNote = await journalService.saveNote(note);
+            if (savedNote) {
                 setNotes(prev => ({
                     ...prev,
-                    [saved.trade_id]: saved
+                    [savedNote.trade_id]: savedNote
                 }));
+                setEditingNoteId(null);
+                setNoteText('');
             }
-            setEditingNoteId(null);
-            setNoteText('');
         } catch (err) {
-            alert(t('common.error'));
+            console.error('Error saving note:', err);
+            alert(t('journal.saveError'));
         }
     };
 
-    const startEditing = (execId: string, currentNote: string = '') => {
-        setEditingNoteId(execId);
-        setNoteText(currentNote);
+    const startEditing = (tradeId: string, currentNote?: string) => {
+        setEditingNoteId(tradeId);
+        setNoteText(currentNote || '');
     };
 
-    const formatTime = (timestamp: string) => {
-        return format(new Date(parseInt(timestamp)), 'dd MMM yyyy HH:mm', {
-            locale: i18n.language === 'tr' ? tr : enUS
-        });
+    const formatTime = (ts: string) => {
+        return new Date(parseInt(ts)).toLocaleString();
     };
 
     return (
@@ -143,108 +134,12 @@ const TradeJournal: React.FC = () => {
                     </div>
                 )}
 
-                {/* Active Orders Section */}
-                <div className="bg-gray-800 rounded-xl border border-gray-700 shadow-lg overflow-hidden">
-                    <div className="p-4 border-b border-gray-700 flex justify-between items-center bg-gray-800/50">
-                        <h2 className="font-semibold text-white flex items-center gap-2">
-                            <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></div>
-                            {t('journal.activeOrders')}
-                        </h2>
-                    </div>
 
-                    {activeOrders.length === 0 ? (
-                        <div className="p-8 text-center text-gray-500 text-sm">
-                            {t('journal.noOrders')}
-                        </div>
-                    ) : (
-                        <div className="overflow-x-auto">
-                            <table className="w-full text-left border-collapse">
-                                <thead className="bg-gray-900/50 text-gray-400 text-sm">
-                                    <tr>
-                                        <th className="p-4 font-medium">{t('journal.timeSymbol')}</th>
-                                        <th className="p-4 font-medium">{t('journal.side')}</th>
-                                        <th className="p-4 font-medium">{t('journal.orderType')}</th>
-                                        <th className="p-4 font-medium">{t('journal.price')}</th>
-                                        <th className="p-4 font-medium">{t('journal.qty')} / {t('journal.filled')}</th>
-                                        <th className="p-4 font-medium">{t('journal.triggerPrice')}</th>
-                                        <th className="p-4 font-medium w-1/3">{t('journal.notes')}</th>
-                                    </tr>
-                                </thead>
-                                <tbody className="divide-y divide-gray-700 text-sm">
-                                    {activeOrders.map((order) => {
-                                        const isBuy = order.side === 'Buy';
-                                        return (
-                                            <tr key={order.orderId} className="hover:bg-gray-700/30 transition-colors">
-                                                <td className="p-4">
-                                                    <div className="text-white font-bold">{order.symbol}</div>
-                                                    <div className="text-xs text-gray-500">{formatTime(order.createdTime)}</div>
-                                                </td>
-                                                <td className="p-4">
-                                                    <span className={`inline-block px-2 py-1 rounded text-xs font-bold ${isBuy ? 'bg-green-900/30 text-green-400' : 'bg-red-900/30 text-red-400'
-                                                        }`}>
-                                                        {order.side}
-                                                    </span>
-                                                </td>
-                                                <td className="p-4 text-gray-300">{order.orderType}</td>
-                                                <td className="p-4 text-white font-mono">{order.price}</td>
-                                                <td className="p-4 text-gray-300">
-                                                    <div>{order.qty}</div>
-                                                    <div className="text-xs text-green-400">{t('journal.filled')}: {order.cumExecQty}</div>
-                                                </td>
-                                                <td className="p-4 text-gray-400 font-mono">
-                                                    {order.triggerPrice || '-'}
-                                                </td>
-                                                <td className="p-4 align-top">
-                                                    {editingNoteId === order.orderId ? (
-                                                        <div className="space-y-2">
-                                                            <textarea
-                                                                value={noteText}
-                                                                onChange={(e) => setNoteText(e.target.value)}
-                                                                className="w-full bg-gray-900 border border-gray-600 rounded p-2 text-white text-sm focus:border-blue-500 outline-none"
-                                                                rows={2}
-                                                                placeholder={t('journal.writeNote')}
-                                                            />
-                                                            <div className="flex gap-2">
-                                                                <button
-                                                                    onClick={() => handleSaveNote(order)}
-                                                                    className="px-3 py-1 bg-blue-600 hover:bg-blue-700 text-white text-xs rounded flex items-center gap-1"
-                                                                >
-                                                                    <Save size={12} /> {t('journal.save')}
-                                                                </button>
-                                                                <button
-                                                                    onClick={() => setEditingNoteId(null)}
-                                                                    className="px-3 py-1 bg-gray-700 hover:bg-gray-600 text-gray-300 text-xs rounded"
-                                                                >
-                                                                    {t('journal.cancel')}
-                                                                </button>
-                                                            </div>
-                                                        </div>
-                                                    ) : (
-                                                        <div
-                                                            onClick={() => startEditing(order.orderId, notes[order.orderId]?.note)}
-                                                            className="group cursor-pointer min-h-[40px] rounded p-2 hover:bg-gray-700/50 border border-transparent hover:border-gray-600/50 transition-all"
-                                                        >
-                                                            {notes[order.orderId]?.note ? (
-                                                                <p className="text-sm text-gray-300 whitespace-pre-wrap">{notes[order.orderId].note}</p>
-                                                            ) : (
-                                                                <p className="text-sm text-gray-600 italic group-hover:text-gray-400">{t('journal.clickToAddNote')}</p>
-                                                            )}
-                                                        </div>
-                                                    )}
-                                                </td>
-                                            </tr>
-                                        )
-                                    })}
-                                </tbody>
-                            </table>
-                        </div>
-                    )}
-                </div>
 
 
 
                 {/* Recent Executions Section */}
-                <div className="bg-gray-800 rounded-xl border border-gray-700 shadow-lg overflow-hidden">
+                < div className="bg-gray-800 rounded-xl border border-gray-700 shadow-lg overflow-hidden" >
                     <div className="p-4 border-b border-gray-700 flex justify-between items-center">
                         <h2 className="font-semibold text-white">{t('journal.recentExecutions')}</h2>
                         <button
@@ -260,115 +155,106 @@ const TradeJournal: React.FC = () => {
                         </button>
                     </div>
 
-                    {loading && executions.length === 0 ? (
-                        <div className="p-12 flex justify-center">
-                            <Loader2 className="animate-spin text-blue-500" size={32} />
-                        </div>
-                    ) : executions.length === 0 && !error ? (
-                        <div className="p-12 text-center text-gray-500">
-                            {t('journal.noTrades')}
-                        </div>
-                    ) : (
-                        <>
-                            <div className="overflow-x-auto">
-                                <table className="w-full text-left border-collapse">
-                                    <thead className="bg-gray-900/50 text-gray-400 text-sm">
-                                        <tr>
-                                            <th className="p-4 font-medium">{t('journal.timeSymbol')}</th>
-                                            <th className="p-4 font-medium">{t('journal.side')}</th>
-                                            <th className="p-4 font-medium">{t('journal.price')}</th>
-                                            <th className="p-4 font-medium">{t('journal.qty')}</th>
-                                            <th className="p-4 font-medium">{t('journal.fee')}</th>
-                                            <th className="p-4 font-medium w-1/3">{t('journal.notes')}</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody className="divide-y divide-gray-700 text-sm">
-                                        {executions.map((exec) => {
-                                            const note = notes[exec.execId];
-                                            const isEditing = editingNoteId === exec.execId;
-                                            const isBuy = exec.side === 'Buy';
-
-                                            return (
-                                                <tr key={exec.execId} className="hover:bg-gray-700/30 transition-colors">
-                                                    <td className="p-4 align-top">
-                                                        <div className="text-white font-medium">{exec.symbol}</div>
-                                                        <div className="text-xs text-gray-500">{formatTime(exec.execTime)}</div>
-                                                    </td>
-                                                    <td className="p-4 align-top">
-                                                        <span className={`inline-block px-2 py-1 rounded text-xs font-bold ${isBuy ? 'bg-green-900/30 text-green-400' : 'bg-red-900/30 text-red-400'
-                                                            }`}>
-                                                            {exec.side}
-                                                        </span>
-                                                    </td>
-                                                    <td className="p-4 align-top text-gray-300 font-mono">
-                                                        {exec.execPrice}
-                                                    </td>
-                                                    <td className="p-4 align-top text-gray-300 font-mono">
-                                                        {exec.orderQty}
-                                                    </td>
-                                                    <td className="p-4 align-top text-gray-400 text-sm font-mono">
-                                                        {exec.execFee}
-                                                    </td>
-                                                    <td className="p-4 align-top">
-                                                        {isEditing ? (
-                                                            <div className="space-y-2">
-                                                                <textarea
-                                                                    value={noteText}
-                                                                    onChange={(e) => setNoteText(e.target.value)}
-                                                                    className="w-full bg-gray-900 border border-gray-600 rounded p-2 text-white text-sm focus:border-blue-500 outline-none"
-                                                                    rows={2}
-                                                                    placeholder={t('journal.writeNote')}
-                                                                />
-                                                                <div className="flex gap-2">
-                                                                    <button
-                                                                        onClick={() => handleSaveNote(exec)}
-                                                                        className="px-3 py-1 bg-blue-600 hover:bg-blue-700 text-white text-xs rounded flex items-center gap-1"
-                                                                    >
-                                                                        <Save size={12} /> {t('journal.save')}
-                                                                    </button>
-                                                                    <button
-                                                                        onClick={() => setEditingNoteId(null)}
-                                                                        className="px-3 py-1 bg-gray-700 hover:bg-gray-600 text-gray-300 text-xs rounded"
-                                                                    >
-                                                                        {t('journal.cancel')}
-                                                                    </button>
-                                                                </div>
-                                                            </div>
-                                                        ) : (
-                                                            <div
-                                                                onClick={() => startEditing(exec.execId, note?.note)}
-                                                                className="group cursor-pointer min-h-[40px] rounded p-2 hover:bg-gray-700/50 border border-transparent hover:border-gray-600/50 transition-all"
-                                                            >
-                                                                {note?.note ? (
-                                                                    <p className="text-sm text-gray-300 whitespace-pre-wrap">{note.note}</p>
-                                                                ) : (
-                                                                    <p className="text-sm text-gray-600 italic group-hover:text-gray-400">{t('journal.clickToAddNote')}</p>
-                                                                )}
-                                                            </div>
-                                                        )}
-                                                    </td>
-                                                </tr>
-                                            );
-                                        })}
-                                    </tbody>
-                                </table>
+                    {
+                        loading && executions.length === 0 ? (
+                            <div className="p-12 flex justify-center">
+                                <Loader2 className="animate-spin text-blue-500" size={32} />
                             </div>
-                            {nextPageCursor && (
-                                <div className="p-4 border-t border-gray-700 flex justify-center">
-                                    <button
-                                        onClick={handleLoadMore}
-                                        disabled={loading}
-                                        className="px-6 py-2 bg-gray-700 hover:bg-gray-600 text-white rounded-md transition-colors disabled:opacity-50"
-                                    >
-                                        {loading ? <Loader2 size={16} className="animate-spin" /> : t('journal.loadMore')}
-                                    </button>
+                        ) : executions.length === 0 && !error ? (
+                            <div className="p-12 text-center text-gray-500">
+                                {t('journal.noTrades')}
+                            </div>
+                        ) : (
+                            <>
+                                <div className="overflow-x-auto">
+                                    <table className="w-full text-left border-collapse">
+                                        <thead className="bg-gray-900/50 text-gray-400 text-sm">
+                                            <tr>
+                                                <th className="p-4 font-medium">{t('journal.timeSymbol')}</th>
+                                                <th className="p-4 font-medium">{t('journal.side')}</th>
+                                                <th className="p-4 font-medium">{t('journal.price')}</th>
+                                                <th className="p-4 font-medium">{t('journal.qty')}</th>
+                                                <th className="p-4 font-medium">{t('journal.fee')}</th>
+                                                <th className="p-4 font-medium w-1/3">{t('journal.notes')}</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody className="divide-y divide-gray-700 text-sm">
+                                            {executions.map((exec) => {
+                                                const note = notes[exec.execId];
+                                                const isEditing = editingNoteId === exec.execId;
+                                                const isBuy = exec.side === 'Buy';
+
+                                                return (
+                                                    <tr key={exec.execId} className="hover:bg-gray-700/30 transition-colors">
+                                                        <td className="p-4 align-top">
+                                                            <div className="text-white font-medium">{exec.symbol}</div>
+                                                            <div className="text-xs text-gray-500">{formatTime(exec.execTime)}</div>
+                                                        </td>
+                                                        <td className="p-4 align-top">
+                                                            <span className={`inline-block px-2 py-1 rounded text-xs font-bold ${isBuy ? 'bg-green-900/30 text-green-400' : 'bg-red-900/30 text-red-400'
+                                                                }`}>
+                                                                {exec.side}
+                                                            </span>
+                                                        </td>
+                                                        <td className="p-4 align-top text-gray-300 font-mono">
+                                                            {exec.execPrice}
+                                                        </td>
+                                                        <td className="p-4 align-top text-gray-300 font-mono">
+                                                            {exec.orderQty}
+                                                        </td>
+                                                        <td className="p-4 align-top text-gray-400 text-sm font-mono">
+                                                            {exec.execFee}
+                                                        </td>
+                                                        <td className="p-4 align-top">
+                                                            {isEditing ? (
+                                                                <div className="space-y-2">
+                                                                    <textarea
+                                                                        value={noteText}
+                                                                        onChange={(e) => setNoteText(e.target.value)}
+                                                                        className="w-full bg-gray-900 border border-gray-600 rounded p-2 text-white text-sm focus:border-blue-500 outline-none"
+                                                                        rows={2}
+                                                                        placeholder={t('journal.writeNote')}
+                                                                    />
+                                                                    <div className="flex gap-2">
+                                                                        <button
+                                                                            onClick={() => handleSaveNote(exec)}
+                                                                            className="px-3 py-1 bg-blue-600 hover:bg-blue-700 text-white text-xs rounded flex items-center gap-1"
+                                                                        >
+                                                                            <Save size={12} /> {t('journal.save')}
+                                                                        </button>
+                                                                        <button
+                                                                            onClick={() => setEditingNoteId(null)}
+                                                                            className="px-3 py-1 bg-gray-700 hover:bg-gray-600 text-gray-300 text-xs rounded"
+                                                                        >
+                                                                            {t('journal.cancel')}
+                                                                        </button>
+                                                                    </div>
+                                                                </div>
+                                                            ) : (
+                                                                <div
+                                                                    onClick={() => startEditing(exec.execId, note?.note)}
+                                                                    className="group cursor-pointer min-h-[40px] rounded p-2 hover:bg-gray-700/50 border border-transparent hover:border-gray-600/50 transition-all"
+                                                                >
+                                                                    {note?.note ? (
+                                                                        <p className="text-sm text-gray-300 whitespace-pre-wrap">{note.note}</p>
+                                                                    ) : (
+                                                                        <p className="text-sm text-gray-600 italic group-hover:text-gray-400">{t('journal.clickToAddNote')}</p>
+                                                                    )}
+                                                                </div>
+                                                            )}
+                                                        </td>
+                                                    </tr>
+                                                );
+                                            })}
+                                        </tbody>
+                                    </table>
                                 </div>
-                            )}
-                        </>
-                    )}
-                </div>
-            </div>
-        </MainLayout>
+                            </>
+                        )
+                    }
+                </div >
+            </div >
+        </MainLayout >
     );
 };
 
