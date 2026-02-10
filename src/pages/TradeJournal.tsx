@@ -19,8 +19,6 @@ const TradeJournal: React.FC = () => {
     const [noteText, setNoteText] = useState('');
     const [category, setCategory] = useState<'linear' | 'inverse'>('linear');
     const [limit] = useState(50);
-    const [startDate, setStartDate] = useState('');
-    const [endDate, setEndDate] = useState('');
     const [nextPageCursor, setNextPageCursor] = useState('');
 
     useEffect(() => {
@@ -32,22 +30,11 @@ const TradeJournal: React.FC = () => {
         setLoading(true);
         setError(null);
         try {
-            // Convert dates to timestamps if present
-            const startTs = startDate ? new Date(startDate).getTime() : undefined;
-            // For end date, we might want end of day? Or just the date. 
-            // Usually valid to end of day if user picks a day. 
-            // Let's assume user picks a date and we want up to that day (inclusive).
-            // But HTML date input gives YYYY-MM-DD which is 00:00.
-            // Let's add 1 day minus 1ms if endDate is set to cover the full day.
-            const endTs = endDate ? new Date(endDate).getTime() + 86400000 - 1 : undefined;
-
             const cursor = reset ? undefined : nextPageCursor;
 
             const [execData, orders] = await Promise.all([
-                bybitService.getExecutions(category, limit, startTs, endTs, cursor),
+                bybitService.getExecutions(category, limit, undefined, undefined, cursor),
                 reset ? bybitService.getOpenOrders(category, limit) : Promise.resolve([])
-                // Only fetch orders on reset/initial, or maybe always? 
-                // Orders are "realtime" snapshot, not paginated history. Let's fetch always on reset or manual refresh.
             ]);
 
             if (reset) {
@@ -55,14 +42,16 @@ const TradeJournal: React.FC = () => {
                 setActiveOrders(orders as any[]);
             } else {
                 setExecutions(prev => [...prev, ...execData.list]);
-                // Don't append orders, they are a current snapshot.
             }
 
             setNextPageCursor(execData.nextPageCursor);
 
             const tradeIds = execData.list.map(e => e.execId);
-            if (tradeIds.length > 0) {
-                const fetchedNotes = await journalService.getNotes(tradeIds);
+            const orderIds = (orders as any[]).map(o => o.orderId);
+            const allIds = [...tradeIds, ...orderIds];
+
+            if (allIds.length > 0) {
+                const fetchedNotes = await journalService.getNotes(allIds);
                 setNotes(prev => {
                     const next = { ...prev };
                     fetchedNotes.forEach(n => {
@@ -90,7 +79,7 @@ const TradeJournal: React.FC = () => {
     const handleSaveNote = async (execution: any) => {
         try {
             const note: TradeNote = {
-                trade_id: execution.execId,
+                trade_id: execution.execId || execution.orderId,
                 symbol: execution.symbol,
                 side: execution.side,
                 note: noteText
@@ -178,6 +167,7 @@ const TradeJournal: React.FC = () => {
                                         <th className="p-4 font-medium">{t('journal.price')}</th>
                                         <th className="p-4 font-medium">{t('journal.qty')} / {t('journal.filled')}</th>
                                         <th className="p-4 font-medium">{t('journal.triggerPrice')}</th>
+                                        <th className="p-4 font-medium w-1/3">{t('journal.notes')}</th>
                                     </tr>
                                 </thead>
                                 <tbody className="divide-y divide-gray-700 text-sm">
@@ -204,6 +194,44 @@ const TradeJournal: React.FC = () => {
                                                 <td className="p-4 text-gray-400 font-mono">
                                                     {order.triggerPrice || '-'}
                                                 </td>
+                                                <td className="p-4 align-top">
+                                                    {editingNoteId === order.orderId ? (
+                                                        <div className="space-y-2">
+                                                            <textarea
+                                                                value={noteText}
+                                                                onChange={(e) => setNoteText(e.target.value)}
+                                                                className="w-full bg-gray-900 border border-gray-600 rounded p-2 text-white text-sm focus:border-blue-500 outline-none"
+                                                                rows={2}
+                                                                placeholder={t('journal.writeNote')}
+                                                            />
+                                                            <div className="flex gap-2">
+                                                                <button
+                                                                    onClick={() => handleSaveNote(order)}
+                                                                    className="px-3 py-1 bg-blue-600 hover:bg-blue-700 text-white text-xs rounded flex items-center gap-1"
+                                                                >
+                                                                    <Save size={12} /> {t('journal.save')}
+                                                                </button>
+                                                                <button
+                                                                    onClick={() => setEditingNoteId(null)}
+                                                                    className="px-3 py-1 bg-gray-700 hover:bg-gray-600 text-gray-300 text-xs rounded"
+                                                                >
+                                                                    {t('journal.cancel')}
+                                                                </button>
+                                                            </div>
+                                                        </div>
+                                                    ) : (
+                                                        <div
+                                                            onClick={() => startEditing(order.orderId, notes[order.orderId]?.note)}
+                                                            className="group cursor-pointer min-h-[40px] rounded p-2 hover:bg-gray-700/50 border border-transparent hover:border-gray-600/50 transition-all"
+                                                        >
+                                                            {notes[order.orderId]?.note ? (
+                                                                <p className="text-sm text-gray-300 whitespace-pre-wrap">{notes[order.orderId].note}</p>
+                                                            ) : (
+                                                                <p className="text-sm text-gray-600 italic group-hover:text-gray-400">{t('journal.clickToAddNote')}</p>
+                                                            )}
+                                                        </div>
+                                                    )}
+                                                </td>
                                             </tr>
                                         )
                                     })}
@@ -213,45 +241,7 @@ const TradeJournal: React.FC = () => {
                     )}
                 </div>
 
-                {/* Date Filters */}
-                <div className="bg-gray-800 rounded-xl border border-gray-700 p-4 shadow-lg flex flex-wrap gap-4 items-end">
-                    <div>
-                        <label className="block text-sm text-gray-400 mb-1">{t('journal.startDate')}</label>
-                        <input
-                            type="date"
-                            value={startDate}
-                            onChange={(e) => setStartDate(e.target.value)}
-                            className="bg-gray-900 border border-gray-600 rounded p-2 text-white text-sm focus:border-blue-500 outline-none"
-                        />
-                    </div>
-                    <div>
-                        <label className="block text-sm text-gray-400 mb-1">{t('journal.endDate')}</label>
-                        <input
-                            type="date"
-                            value={endDate}
-                            onChange={(e) => setEndDate(e.target.value)}
-                            className="bg-gray-900 border border-gray-600 rounded p-2 text-white text-sm focus:border-blue-500 outline-none"
-                        />
-                    </div>
-                    <button
-                        onClick={handleFilter}
-                        className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-md text-sm font-medium transition-colors"
-                    >
-                        {t('journal.filter')}
-                    </button>
-                    <button
-                        onClick={() => {
-                            setStartDate('');
-                            setEndDate('');
-                            // Immediate reload or wait for filter click? 
-                            // Usually reset clears and maybe reloads default
-                            // Let's just clear for now, user clicks filter to apply "no date" (all recent)
-                        }}
-                        className="px-4 py-2 bg-gray-700 hover:bg-gray-600 text-gray-300 rounded-md text-sm font-medium transition-colors"
-                    >
-                        Clear
-                    </button>
-                </div>
+
 
                 {/* Recent Executions Section */}
                 <div className="bg-gray-800 rounded-xl border border-gray-700 shadow-lg overflow-hidden">

@@ -78,7 +78,7 @@ export const api = {
         .from('plan_progress')
         .delete()
         .match({ plan_id: planId, day_number: day });
-      
+
       if (error) throw error;
     } else {
       // Upsert progress
@@ -93,5 +93,45 @@ export const api = {
 
       if (error) throw error;
     }
+  },
+
+  // Settings
+  async getSettings(): Promise<{ apiKey: string; apiSecret: string } | null> {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return null;
+
+    const { data, error } = await supabase
+      .from('user_settings')
+      .select('bybit_api_key, bybit_api_secret')
+      .eq('user_id', user.id)
+      .single();
+
+    if (error && error.code !== 'PGRST116') { // PGRST116 is "The result contains 0 rows"
+      console.error('Error fetching settings:', error);
+      return null;
+    }
+
+    if (!data) return null;
+
+    return {
+      apiKey: data.bybit_api_key,
+      apiSecret: data.bybit_api_secret
+    };
+  },
+
+  async updateSettings(apiKey: string, apiSecret: string): Promise<void> {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) throw new Error('User not authenticated');
+
+    const { error } = await supabase
+      .from('user_settings')
+      .upsert({
+        user_id: user.id,
+        bybit_api_key: apiKey,
+        bybit_api_secret: apiSecret,
+        updated_at: new Date().toISOString()
+      }, { onConflict: 'user_id' });
+
+    if (error) throw error;
   }
 };

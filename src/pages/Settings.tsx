@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import MainLayout from '../layouts/MainLayout';
 import { Save, Settings as SettingsIcon, Trash2, CheckCircle, Plus, Eye, X } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-import { setActivePlanId, getActivePlanId, type Plan, saveBybitCredentials, getBybitCredentials } from '../utils/storage';
+import { setActivePlanId, getActivePlanId, type Plan } from '../utils/storage';
 import { api } from '../services/api';
 import { generatePlan, type PlanDay } from '../utils/planGenerator';
 import DatePicker, { registerLocale } from 'react-datepicker';
@@ -29,7 +29,9 @@ const Settings: React.FC = () => {
 
   // API Settings
   const [apiKey, setApiKey] = useState('');
+
   const [apiSecret, setApiSecret] = useState('');
+  const [isSavingKeys, setIsSavingKeys] = useState(false);
 
   // Preview State
   const [showPreview, setShowPreview] = useState(false);
@@ -37,10 +39,21 @@ const Settings: React.FC = () => {
 
   useEffect(() => {
     loadPlans();
-    const creds = getBybitCredentials();
-    setApiKey(creds.apiKey);
-    setApiSecret(creds.apiSecret);
+
+    loadSettings();
   }, []);
+
+  const loadSettings = async () => {
+    try {
+      const settings = await api.getSettings();
+      if (settings) {
+        setApiKey(settings.apiKey);
+        setApiSecret(settings.apiSecret);
+      }
+    } catch (error) {
+      console.error('Error loading settings:', error);
+    }
+  };
 
   const loadPlans = async () => {
     try {
@@ -136,9 +149,17 @@ const Settings: React.FC = () => {
     return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(val);
   };
 
-  const handleSaveApiKeys = () => {
-    saveBybitCredentials(apiKey, apiSecret);
-    alert('API Credentials Saved');
+  const handleSaveApiKeys = async () => {
+    setIsSavingKeys(true);
+    try {
+      await api.updateSettings(apiKey, apiSecret);
+      alert('API Credentials Saved to Database');
+    } catch (error) {
+      console.error('Error saving settings:', error);
+      alert('Failed to save credentials');
+    } finally {
+      setIsSavingKeys(false);
+    }
   };
 
   return (
@@ -398,13 +419,18 @@ const Settings: React.FC = () => {
               </div>
               <button
                 onClick={handleSaveApiKeys}
-                className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 rounded-lg transition-colors flex items-center justify-center gap-2"
+                disabled={isSavingKeys}
+                className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 rounded-lg transition-colors flex items-center justify-center gap-2 disabled:opacity-50"
               >
-                <Save size={20} />
-                Save Credentials
+                {isSavingKeys ? 'Saving...' : (
+                  <>
+                    <Save size={20} />
+                    Save Credentials
+                  </>
+                )}
               </button>
               <p className="text-xs text-gray-500 text-center">
-                Cihazınızda saklanır (LocalStorage). Sunucuya gönderilmez.
+                Stored securely in the database. Only accessible to you.
               </p>
             </div>
           </div>

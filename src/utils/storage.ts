@@ -191,17 +191,4 @@ export const getActivePlan = (): Plan | null => {
 };
 
 // Bybit Credentials
-const BYBIT_API_KEY = 'BYBIT_API_KEY';
-const BYBIT_API_SECRET = 'BYBIT_API_SECRET';
 
-export const saveBybitCredentials = (key: string, secret: string) => {
-  localStorage.setItem(BYBIT_API_KEY, key);
-  localStorage.setItem(BYBIT_API_SECRET, secret);
-};
-
-export const getBybitCredentials = () => {
-  return {
-    apiKey: localStorage.getItem(BYBIT_API_KEY) || '',
-    apiSecret: localStorage.getItem(BYBIT_API_SECRET) || ''
-  };
-};
